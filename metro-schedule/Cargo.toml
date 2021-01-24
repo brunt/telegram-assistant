@@ -1,0 +1,16 @@
+[package]
+name = "metro-schedule"
+version = "0.1.0"
+authors = ["Bryant Deters <bryantdeters@gmail.com"]
+edition = "2018"
+
+[dependencies]
+actix-web = "3"
+actix-web-prom = "0.5"
+clap = "2.33.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+chrono = "0.4"
+csv = "1"
+rust-embed = "5"

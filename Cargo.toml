@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "spending-tracker",
+    "metro-schedule",
+    "telegram-bot",
+]
+
+[profile.release]
+opt-level = 3
+overflow-checks = false
+debug-assertions = false
+lto = true
+debug = false
