@@ -1,10 +1,10 @@
-use prometheus::IntCounterVec;
-use teloxide::prelude::*;
-use metro_schedule::{NextArrivalRequest};
 use crate::config::Config;
 use crate::metro::{help_schedule, is_next_arrival_request};
 use crate::spending::{help_spending, is_spent_category_request, is_spent_request};
 use crate::weather::{help_weather, weather_request};
+use metro_schedule::NextArrivalRequest;
+use prometheus::IntCounterVec;
+use teloxide::prelude::*;
 
 fn helpmsg() -> &'static str {
     "Use the following for additional details:\nhelp schedule\nhelp spending\nhelp weather"

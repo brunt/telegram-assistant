@@ -1,5 +1,5 @@
+use serde_derive::{Deserialize, Serialize};
 use std::fmt;
-use serde_derive::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum Category {

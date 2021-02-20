@@ -7,11 +7,9 @@ use actix_web_prom::PrometheusMetrics;
 use chrono::Local;
 use mime_guess::from_path;
 use rusty_money::{iso, Money};
+use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse, Transaction};
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
-use spending_tracker::{Category, Transaction, SpentRequest, SpentResponse, SpentTotalResponse};
-
-
 
 #[derive(RustEmbed)]
 #[folder = "public/"]
@@ -58,9 +56,9 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(dist)
     })
-        .bind("0.0.0.0:8001")?
-        .run()
-        .await
+    .bind("0.0.0.0:8001")?
+    .run()
+    .await
 }
 
 async fn spent(state: web::Data<AppState<'_>>, req: web::Json<SpentRequest>) -> HttpResponse {

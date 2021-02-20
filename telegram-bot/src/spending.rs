@@ -1,6 +1,6 @@
 use lazy_static::*;
 use regex::Regex;
-use spending_tracker::{Category, SpentRequest, SpentTotalResponse, SpentResponse};
+use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SpendingAPI {

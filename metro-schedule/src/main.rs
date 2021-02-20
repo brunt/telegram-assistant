@@ -3,11 +3,12 @@ extern crate rust_embed;
 
 use actix_web::{post, web, App, HttpResponse, HttpServer};
 use actix_web_prom::PrometheusMetrics;
+use anyhow::{bail, Result};
 use chrono::{DateTime, Datelike, Local, Weekday};
 use clap::{App as ClApp, Arg};
 use csv::Reader;
-use std::cmp::Ordering;
 use metro_schedule::{NextArrivalRequest, NextArrivalResponse, StationTimeSlice};
+use std::cmp::Ordering;
 
 #[derive(RustEmbed)]
 #[folder = "data/"]
@@ -56,560 +57,441 @@ async fn next_arrival(req: web::Json<NextArrivalRequest>) -> HttpResponse {
 }
 
 fn parse_request_pick_file(t: DateTime<Local>, direction: &str) -> Option<String> {
-    let day: &str = match t.weekday() {
-        Weekday::Sat => "saturday",
-        Weekday::Sun => "sunday",
-        _ => "weekday",
-    };
-    match direction {
-        "east" | "west" => Some(format!("{}bound-{}-schedule.csv", direction, day)),
-        _ => {
-            println!("not east or west?");
-            None
-        }
-    }
+    (direction.eq("east") || direction.eq("west")).then(|| {
+        format!(
+            "{}bound-{}-schedule.csv",
+            direction,
+            match t.weekday() {
+                Weekday::Sat => "saturday",
+                Weekday::Sun => "sunday",
+                _ => "weekday",
+            }
+        )
+    })
 }
 
-fn search_csv(
-    file_contents: &[u8],
-    station: &str,
-    t: DateTime<Local>,
-) -> Result<(String, String), &'static str> {
+fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result<(String, String)> {
     let mut reader = Reader::from_reader(&file_contents[..]);
     match station {
         "lambert" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
-                match record.lambert_t1 {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                let record: StationTimeSlice = result?;
+                if let Some(s) = record.lambert_t1 {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "lambert2" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.lambert_t2 {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.lambert_t2 {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "hanley" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.north_hanley {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.north_hanley {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "umsl north" | "umsl" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.umsl_north {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.umsl_north {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "umsl south" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.umsl_south {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.umsl_south {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "rock road" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.rock_road {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.rock_road {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "wellston" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.wellston {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.wellston {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "delmar" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.delmar_loop {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.delmar_loop {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "shrewsbury" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.shrewsbury {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.shrewsbury {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "sunnen" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.sunnen {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.sunnen {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "maplewood" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.maplewood_manchester {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.maplewood_manchester {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "brentwood" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.brentwood {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.brentwood {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "richmond" | "richmond heights" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.richmond_heights {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.richmond_heights {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "clayton" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.clayton {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.clayton {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "forsyth" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.forsyth {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.forsyth {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "u city" | "university city" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.u_city {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.u_city {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "skinker" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.skinker {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.skinker {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "forest park" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.forest_park {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.forest_park {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "cwe" | "central west end" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.cwe {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.cwe {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "cortex" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.cortex {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.cortex {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "grand" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.grand {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.grand {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "union" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.union {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.union {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "civic center" | "civic" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.civic_center {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.civic_center {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "stadium" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.stadium {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.stadium {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "8th and pine" | "8th pine" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.eight_pine {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.eight_pine {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "convention center" | "convention" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.convention_center {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.convention_center {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "lacledes" | "lacledes landing" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.lacledes_landing {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.lacledes_landing {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "riverfront" | "east riverfront" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.east_riverfront {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.east_riverfront {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "fifth missouri" | "5th missouri" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.fifth_missouri {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.fifth_missouri {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "emerson" | "emerson park" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.emerson_park {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.emerson_park {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "jjk" | "jackie joiner" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.jjk {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.jjk {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "washington" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.washington {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.washington {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "fvh" | "fairview heights" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.fairview_heights {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.fairview_heights {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "memorial hospital" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.memorial_hospital {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.memorial_hospital {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "swansea" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.swansea {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.swansea {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "belleville" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.belleville {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.belleville {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "college" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.college {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.college {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
         "shiloh" | "shiloh scott" => {
             for result in reader.deserialize() {
                 let record: StationTimeSlice = result.unwrap();
-                match record.shiloh_scott {
-                    Some(s) => {
-                        if schedule_time_is_later_than_now(t, s.clone()) {
-                            return Ok(line_info(s));
-                        }
+                if let Some(s) = record.shiloh_scott {
+                    if schedule_time_is_later_than_now(t, s.clone()) {
+                        return Ok(line_info(s));
                     }
-                    None => continue,
                 }
             }
-            Err("failed to find a time from schedule data")
+            bail!("failed to find a time from schedule data")
         }
-        _ => Err("that station is not in the schedule"),
+        _ => bail!("that station is not in the schedule"),
     }
 }
 

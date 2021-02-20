@@ -1,6 +1,6 @@
 use lazy_static::*;
-use regex::Regex;
 use metro_schedule::{NextArrivalRequest, NextArrivalResponse};
+use regex::Regex;
 
 pub(crate) fn is_next_arrival_request(text: &str) -> bool {
     lazy_static! {
@@ -73,5 +73,3 @@ pub(crate) fn help_schedule() -> &'static str {
     college\n
     shiloh (shiloh scott)"
 }
-
-
