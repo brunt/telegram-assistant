@@ -496,18 +496,15 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
 }
 
 fn schedule_time_is_later_than_now(t: DateTime<Local>, mut s: String) -> bool {
-    let mut plus_twelve = false;
     let _ = s.pop(); //remove line type
-    if s.pop().unwrap().to_string().eq("P") {
-        plus_twelve = true;
-    }
+    let is_pm = s.pop().map_or(false, |c| c.to_string().eq("P"));
     let x: Vec<&str> = s.split(':').collect();
-    let mut hh: u32 = x[0].parse::<u32>().unwrap_or_default();
-    let mm: u32 = x[1].parse::<u32>().unwrap_or_default();
-    if plus_twelve {
-        hh = ((hh % 12) + 12) % 24;
-    }
-    match t.cmp(&Local::today().and_hms(hh, mm, 00)) {
+    let hh: u32 = x[0].parse::<u32>().unwrap_or_default();
+    match t.cmp(&Local::today().and_hms(
+        if is_pm { ((hh % 12) + 12) % 24 } else { hh },
+        x[1].parse::<u32>().unwrap_or_default(),
+        00,
+    )) {
         Ordering::Less => true,
         Ordering::Equal => true,
         Ordering::Greater => false,
