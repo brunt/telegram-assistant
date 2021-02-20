@@ -86,7 +86,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "lambert2" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.lambert_t2 {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -97,7 +97,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "hanley" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.north_hanley {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -108,7 +108,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "umsl north" | "umsl" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.umsl_north {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -119,7 +119,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "umsl south" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.umsl_south {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -130,7 +130,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "rock road" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.rock_road {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -141,7 +141,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "wellston" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.wellston {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -152,7 +152,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "delmar" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.delmar_loop {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -163,7 +163,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "shrewsbury" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.shrewsbury {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -174,7 +174,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "sunnen" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.sunnen {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -185,7 +185,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "maplewood" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.maplewood_manchester {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -196,7 +196,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "brentwood" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.brentwood {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -207,7 +207,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "richmond" | "richmond heights" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.richmond_heights {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -218,7 +218,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "clayton" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.clayton {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -229,7 +229,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "forsyth" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.forsyth {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -240,7 +240,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "u city" | "university city" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.u_city {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -251,7 +251,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "skinker" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.skinker {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -262,7 +262,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "forest park" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.forest_park {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -273,7 +273,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "cwe" | "central west end" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.cwe {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -284,7 +284,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "cortex" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.cortex {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -295,7 +295,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "grand" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.grand {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -306,7 +306,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "union" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.union {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -317,7 +317,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "civic center" | "civic" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.civic_center {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -328,7 +328,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "stadium" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.stadium {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -339,7 +339,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "8th and pine" | "8th pine" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.eight_pine {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -350,7 +350,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "convention center" | "convention" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.convention_center {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -361,7 +361,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "lacledes" | "lacledes landing" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.lacledes_landing {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -372,7 +372,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "riverfront" | "east riverfront" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.east_riverfront {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -383,7 +383,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "fifth missouri" | "5th missouri" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.fifth_missouri {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -394,7 +394,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "emerson" | "emerson park" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.emerson_park {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -405,7 +405,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "jjk" | "jackie joiner" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.jjk {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -416,7 +416,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "washington" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.washington {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -427,7 +427,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "fvh" | "fairview heights" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.fairview_heights {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -438,7 +438,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "memorial hospital" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.memorial_hospital {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -449,7 +449,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "swansea" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.swansea {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -460,7 +460,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "belleville" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.belleville {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -471,7 +471,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "college" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.college {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
@@ -482,7 +482,7 @@ fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result
         }
         "shiloh" | "shiloh scott" => {
             for result in reader.deserialize() {
-                let record: StationTimeSlice = result.unwrap();
+                let record: StationTimeSlice = result?;
                 if let Some(s) = record.shiloh_scott {
                     if schedule_time_is_later_than_now(t, s.clone()) {
                         return Ok(line_info(s));
