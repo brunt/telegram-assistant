@@ -505,8 +505,7 @@ fn schedule_time_is_later_than_now(t: DateTime<Local>, mut s: String) -> bool {
         x[1].parse::<u32>().unwrap_or_default(),
         00,
     )) {
-        Ordering::Less => true,
-        Ordering::Equal => true,
+        Ordering::Less | Ordering::Equal => true,
         Ordering::Greater => false,
     }
 }

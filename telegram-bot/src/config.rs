@@ -7,7 +7,6 @@ use std::sync::Arc;
 pub(crate) struct Config {
     pub(crate) spending_api: Arc<SpendingAPI>,
     pub(crate) metro_api: Arc<MetroScheduleAPI>,
-    pub(crate) forecast_token: Arc<str>,
     pub(crate) webserver_port: Arc<str>,
 }
 
@@ -27,9 +26,6 @@ impl Config {
             metro_api: Arc::new(MetroScheduleAPI {
                 url: env::var("METRO_API_URL").expect("Missing METRO_API_URL value"),
             }),
-            forecast_token: Into::<Arc<str>>::into(
-                env::var("FORECAST_TOKEN").expect("Missing FORECAST_TOKEN"),
-            ),
             webserver_port: Into::<Arc<str>>::into(
                 env::var("BOT_METRICS_PORT").expect("Missing BOT_METRICS_PORT value"),
             ),

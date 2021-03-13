@@ -7,7 +7,6 @@ mod config;
 mod dispatch;
 mod metro;
 mod spending;
-mod weather;
 
 use config::Config;
 use dispatch::parse_messages;
