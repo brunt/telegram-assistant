@@ -6,7 +6,7 @@ use prometheus::IntCounterVec;
 use teloxide::prelude::*;
 
 fn helpmsg() -> &'static str {
-    "Use the following for additional details:\nhelp schedule\nhelp spending\nhelp weather"
+    "Use the following for additional details:\nhelp schedule\nhelp spending"
 }
 
 pub(crate) async fn parse_messages(
