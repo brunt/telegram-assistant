@@ -3,6 +3,7 @@ members = [
     "spending-tracker",
     "metro-schedule",
     "telegram-bot",
+    "rpc"
 ]
 
 [profile.release]
