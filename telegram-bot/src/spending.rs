@@ -67,9 +67,9 @@ impl SpendingAPI {
         input: &str,
         category: Option<Category>,
     ) -> String {
-        let split: Vec<&str> = input.split(' ').collect();
-        match split[0] {
-            "budget" | "Budget" => match split[1].parse::<f64>() {
+        let (word1, word2) = input.split_once(' ').unwrap_or(("", ""));
+        match word1 {
+            "budget" | "Budget" => match word2.parse::<f64>() {
                 Ok(amount) => match &self
                     .budget_set_request(SpentRequest { amount, category })
                     .await
@@ -79,7 +79,7 @@ impl SpendingAPI {
                 },
                 Err(_) => "cannot parse that value as float".to_string(),
             },
-            _ => match split[1] {
+            _ => match word2 {
                 "reset" => match &self.spending_reset_request().await {
                     Ok(s) => s.to_string(),
                     Err(_) => "error calling api".to_string(),
@@ -88,7 +88,7 @@ impl SpendingAPI {
                     Ok(s) => s.to_string(),
                     Err(_) => "error calling api".to_string(),
                 },
-                _ => match split[1].parse::<f64>() {
+                _ => match word2.parse::<f64>() {
                     Ok(amount) => match &self
                         .spending_request(SpentRequest { amount, category })
                         .await

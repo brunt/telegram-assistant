@@ -2,3 +2,45 @@ syntax = "proto3";
 
 package spending_tracker;
 
+import "google/protobuf/empty.proto";
+
+service SpendingTracker {
+  rpc SpentReset (google.protobuf.Empty) returns (SpentResponse);
+  rpc SpentAddRequest (SpentRequest) returns (SpentResponse);
+  rpc SetBudget (SpentRequest) returns (SpentResponse);
+  rpc SpentTotal (google.protobuf.Empty) returns (SpentTotalResponse);
+}
+
+message BudgetRequest {
+  double amount = 1;
+}
+
+message SpentRequest {
+    double amount = 1;
+    Category category = 2;
+}
+
+message SpentResponse {
+  string total = 1;
+}
+
+message SpentTotalResponse {
+  string budget = 1;
+  string total = 2;
+  repeated Transaction transactions = 3;
+}
+
+message Transaction {
+  string amount = 1;
+  string category = 2;
+  string time = 3;
+}
+
+enum Category {
+    Dining = 0;
+    Grocery = 1;
+    Travel = 2;
+    Merchandise= 3;
+    Entertainment= 4;
+    Other= 5;
+}

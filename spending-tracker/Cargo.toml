@@ -15,4 +15,5 @@ serde_derive = "1.0"
 rust-embed = "5"
 mime_guess = "2"
 rusty-money = "0.4"
+rpc = { path = "../rpc" }
 

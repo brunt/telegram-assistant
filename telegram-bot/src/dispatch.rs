@@ -26,12 +26,12 @@ pub(crate) async fn parse_messages(
             msg.answer_str(help_spending()).await.unwrap();
         } else if is_next_arrival_request(txt) {
             counter.with_label_values(&["Next Arrival"]).inc();
-            let data_vec: Vec<&str> = txt.splitn(2, ' ').collect();
+            let (direction, station) = txt.split_once(' ').unwrap_or(("", ""));
             match &config
                 .metro_api
                 .next_arrival_request(NextArrivalRequest {
-                    station: data_vec[1].to_string().to_lowercase(),
-                    direction: data_vec[0].to_string().to_lowercase(),
+                    station: station.to_string().to_lowercase(),
+                    direction: direction.to_string().to_lowercase(),
                 })
                 .await
             {
