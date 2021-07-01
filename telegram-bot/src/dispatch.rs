@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::enviroplus::help_thermostat;
 use crate::metro::{help_schedule, is_next_arrival_request};
 use crate::spending::{help_spending, is_spent_category_request, is_spent_request};
 use metro_schedule::NextArrivalRequest;
@@ -6,7 +7,7 @@ use prometheus::IntCounterVec;
 use teloxide::prelude::*;
 
 fn helpmsg() -> &'static str {
-    "Use the following for additional details:\nhelp schedule\nhelp spending"
+    "Use the following for additional details:\nhelp schedule\nhelp spending\nhelp thermostat"
 }
 
 pub(crate) async fn parse_messages(
@@ -24,6 +25,19 @@ pub(crate) async fn parse_messages(
         } else if txt.eq("Help spending") {
             counter.with_label_values(&["Help spending"]).inc();
             msg.answer_str(help_spending()).await.unwrap();
+        } else if txt.eq("Help thermostat") {
+            counter.with_label_values(&["Help thermostat"]).inc();
+            msg.answer_str(help_thermostat()).await.unwrap();
+        } else if txt.eq("Thermostat") {
+            counter.with_label_values(&["Thermostat"]).inc();
+            match &config.enviro_api.request_data().await {
+                Ok(resp) => {
+                    msg.answer_str(resp.to_string()).await.unwrap();
+                }
+                Err(_) => {
+                    msg.answer_str("error getting data").await.unwrap();
+                }
+            }
         } else if is_next_arrival_request(txt) {
             counter.with_label_values(&["Next Arrival"]).inc();
             let data_vec: Vec<&str> = txt.splitn(2, ' ').collect();
