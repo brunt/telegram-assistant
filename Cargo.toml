@@ -11,3 +11,4 @@ overflow-checks = false
 debug-assertions = false
 lto = true
 debug = false
+panic = "abort"

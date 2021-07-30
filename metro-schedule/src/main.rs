@@ -71,7 +71,7 @@ fn parse_request_pick_file(t: DateTime<Local>, direction: &str) -> Option<String
 }
 
 fn search_csv(file_contents: &[u8], station: &str, t: DateTime<Local>) -> Result<(String, String)> {
-    let mut reader = Reader::from_reader(&file_contents[..]);
+    let mut reader = Reader::from_reader(file_contents);
     match station {
         "lambert" => {
             for result in reader.deserialize() {
