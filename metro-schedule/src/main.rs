@@ -32,6 +32,7 @@ async fn main() -> std::io::Result<()> {
 async fn next_arrival(req: web::Json<NextArrivalRequest>) -> HttpResponse {
     let input = req.into_inner();
     let t = Local::now();
+    dbg!("{:?}", &input);
     match parse_request_pick_file(t, input.direction.as_str()) {
         Some(data) => match Asset::get(&data) {
             Some(file_contents) => {

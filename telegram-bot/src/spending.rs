@@ -103,26 +103,6 @@ impl SpendingAPI {
     }
 }
 
-pub(crate) fn is_spent_request(text: &str) -> bool {
-    lazy_static! {
-        static ref NSRE: Regex =
-            Regex::new(r"(budget|Budget|spent|Spent)\s(total|reset|-?[0-9]+\.?[0-9]+)").unwrap();
-    }
-    NSRE.is_match(text)
-}
-
-pub(crate) fn is_spent_category_request(text: &str) -> bool {
-    lazy_static! {
-        static ref NSREC: Regex =
-            Regex::new(r"(spent|Spent)\s(total|reset|-?[0-9]+\.?[0-9]+)\s(dining|travel|merchandise|entertainment|grocery|other)").unwrap();
-    }
-    NSREC.is_match(text)
-}
-
-pub(crate) fn help_spending() -> &'static str {
-    "Spending Tracker:\nspent total\nspent reset\nspent 10.67"
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
