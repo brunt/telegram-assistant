@@ -1,18 +1,16 @@
-use lazy_static::*;
 use metro_schedule::{NextArrivalRequest, NextArrivalResponse};
-use regex::Regex;
-
-pub(crate) fn is_next_arrival_request(text: &str) -> bool {
-    lazy_static! {
-        static ref NARE: Regex =
-            Regex::new(r"(east|west|West|East)\s[a-zA-Z0-9]+\s?[a-zA-Z]*").unwrap();
-    }
-    NARE.is_match(text)
-}
 
 #[derive(Debug, Clone)]
 pub(crate) struct MetroScheduleAPI {
     pub(crate) url: String,
+}
+
+impl Default for MetroScheduleAPI {
+    fn default() -> Self {
+        Self {
+            url: "http://localhost:8000/next-arrival".into(),
+        }
+    }
 }
 
 impl MetroScheduleAPI {

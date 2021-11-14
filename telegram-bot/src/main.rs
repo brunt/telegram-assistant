@@ -3,7 +3,6 @@ use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 use prometheus::{opts, IntCounterVec};
 use std::collections::HashMap;
 use teloxide::prelude::*;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 
 mod config;
 mod dispatch;
@@ -13,7 +12,6 @@ mod spending;
 
 use crate::dispatch::handler;
 use config::Config;
-// use dispatch::parse_messages;
 
 #[actix_web::main]
 async fn main() {

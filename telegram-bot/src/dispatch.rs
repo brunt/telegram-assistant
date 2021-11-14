@@ -1,9 +1,9 @@
 use crate::config::Config;
+use crate::metro::help_schedule;
 use metro_schedule::NextArrivalRequest;
 use prometheus::IntCounterVec;
-use spending_tracker::Category;
+use spending_tracker::{Category, SpentRequest};
 use std::error::Error;
-use teloxide::adaptors::DefaultParseMode;
 use teloxide::types::Me;
 use teloxide::{
     prelude::*,
@@ -20,22 +20,22 @@ enum Command {
         description = "next arriving train at station heading in direction",
         parse_with = "split"
     )]
-    NextArrival { station: String, direction: String },
-    // #[command(
-    //     rename = "lowercase",
-    //     description = "keep a running balance against a set budget",
-    //     parse_with = "split"
-    // )]
-    // Spent {
-    //     amount: String,
-    //     // category: Option<Category>,
-    // },
-    // #[command(description = "see running budget total")]
-    // SpentTotal,
-    // #[command(rename = "spent-reset",description = "reset spending amount")]
-    // SpentReset,
-    // #[command(description = "set a spending budget")]
-    // Budget(String),
+    NextArrival { direction: String, station: String },
+    #[command(
+        rename = "lowercase",
+        description = "keep a running balance against a set budget",
+        parse_with = "opt_category"
+    )]
+    Spent {
+        amount: String,
+        category: Option<Category>,
+    },
+    #[command(rename = "total", description = "see running budget total")]
+    SpentTotal,
+    #[command(rename = "reset", description = "reset spending amount")]
+    SpentReset,
+    #[command(description = "set a spending budget")]
+    Budget(String),
     #[command(description = "read thermostat values")]
     Thermostat,
 }
@@ -66,47 +66,64 @@ pub(crate) async fn handler(
             counter.with_label_values(&["Help"]).inc();
             Command::descriptions()
         }
-        Command::NextArrival { station, direction } => {
-            dbg!("{}, {}", &station, &direction);
+        Command::NextArrival { direction, station } => {
             counter.with_label_values(&["Next Arrival"]).inc();
-            // config.metro_api.next_arrival_request(NextArrivalRequest{
-            //     station,
-            //     direction,
-            // }).await.map_or_else(
-            //     |_| "error getting data".to_string(),
-            //     |resp| dbg!(resp.to_string()),
-            //     )
-                        match &config
+            config
                 .metro_api
-                .next_arrival_request(NextArrivalRequest {
-                    station: station.to_lowercase(),
-                    direction: direction.to_lowercase(),
+                .next_arrival_request(NextArrivalRequest { station, direction })
+                .await
+                .map_or_else(|_| help_schedule().to_string(), |resp| resp.to_string())
+        }
+        Command::Spent { amount, category } => {
+            counter.with_label_values(&["Spending"]).inc();
+            config
+                .spending_api
+                .spending_request(SpentRequest {
+                    amount: amount.parse::<f64>()?,
+                    category,
                 })
                 .await
-            {
-                Ok(s) => {
-                    s.to_string()
-                }
-                Err(e) => {
-                    dbg!(e);
-                    "yeet".to_string()
-                }
-            }
+                .map_or_else(
+                    |_| "error getting data".to_string(),
+                    |resp| resp.to_string(),
+                )
         }
-        // Command::Spent {
-        //     amount
-        //     // category: Some(category)
-        // } => {
-        //     counter.with_label_values(&["Spending"]).inc();
-        //     // config.spending_api.parse_spent_request(txt, None).await
-        //     // &config.spending_api.
-        //     "".to_string()
-        //
-        // }
-        // Command::Budget(amount) => {
-        //     counter.with_label_values(&["Spending"]).inc();
-        //     "".to_string()
-        // }
+        Command::SpentTotal => {
+            counter.with_label_values(&["Spending"]).inc();
+            config
+                .spending_api
+                .spending_total_request()
+                .await
+                .map_or_else(
+                    |_| "error getting data".to_string(),
+                    |resp| resp.to_string(),
+                )
+        }
+        Command::SpentReset => {
+            counter.with_label_values(&["Spending"]).inc();
+            config
+                .spending_api
+                .spending_reset_request()
+                .await
+                .map_or_else(
+                    |_| "error getting data".to_string(),
+                    |resp| resp.to_string(),
+                )
+        }
+        Command::Budget(amount) => {
+            counter.with_label_values(&["Spending"]).inc();
+            config
+                .spending_api
+                .budget_set_request(SpentRequest {
+                    amount: amount.parse::<f64>()?,
+                    category: None,
+                })
+                .await
+                .map_or_else(
+                    |_| "error getting data".to_string(),
+                    |resp| resp.to_string(),
+                )
+        }
         Command::Thermostat => {
             counter.with_label_values(&["Thermostat"]).inc();
             config.enviro_api.request_data().await.map_or_else(
@@ -120,62 +137,38 @@ pub(crate) async fn handler(
     Ok(())
 }
 
-fn opt(input: String) -> Result<(Option<String>,), ParseError> {
-    match input.split_whitespace().count() {
-        0 => Ok((None,)),
-        1 => Ok((Some(input),)),
+fn opt_category(input: String) -> Result<(String, Option<Category>), ParseError> {
+    let split = input.split(' ').collect::<Vec<_>>();
+    match split.len() {
+        0 => Ok((input, None)),
+        1 => Ok((split[0].to_string(), None)),
+        2 => Ok((split[0].to_string(), Some(Category::from(split[1])))),
         n => Err(ParseError::TooManyArguments {
             expected: 1,
             found: n,
-            message: String::from("Wrong number of arguments"),
+            message: "Wrong number of arguments".to_string(),
         }),
     }
 }
 
-// pub(crate) async fn parse_messages(
-//     msg: UpdateWithCx<AutoSend<Bot>, Message>,
-//     config: Config,
-//     counter: IntCounterVec,
-// ) {
-//     if let Some(txt) = msg.update.text() {
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn parse_category() {
+        if let Command::Spent { amount, category } = Command::parse("/spent 4.00", "").unwrap() {
+            assert_eq!(amount, "4.00".to_string());
+            assert!(category.is_none());
+        }
 
-//         } else if is_next_arrival_request(txt) {
-//             counter.with_label_values(&["Next Arrival"]).inc();
-//             let data_vec: Vec<&str> = txt.splitn(2, ' ').collect();
-//             match &config
-//                 .metro_api
-//                 .next_arrival_request(NextArrivalRequest {
-//                     station: data_vec[1].to_string().to_lowercase(),
-//                     direction: data_vec[0].to_string().to_lowercase(),
-//                 })
-//                 .await
-//             {
-//                 Ok(s) => {
-//                     msg.answer(s.to_string()).await.unwrap();
-//                 }
-//                 Err(_) => {
-//                     msg.answer("An error occurred retrieving the schedule")
-//                         .await
-//                         .unwrap();
-//                 }
-//             }
-//         } else if is_spent_category_request(txt) {
-//             counter.with_label_values(&["Spending"]).inc();
-//             let category: &str = txt.splitn(3, ' ').last().unwrap();
-//             msg.answer(
-//                 &config
-//                     .spending_api
-//                     .parse_spent_request(txt, Some(category.into()))
-//                     .await,
-//             )
-//             .await
-//             .unwrap();
-//         } else if is_spent_request(txt) {
-//             counter.with_label_values(&["Spending"]).inc();
-//             msg.answer(&config.spending_api.parse_spent_request(txt, None).await)
-//                 .await
-//                 .unwrap();
-//         }
-//     }
-// }
+        if let Command::Spent { amount, category } =
+            Command::parse("/spent 12.3 dining", "").unwrap()
+        {
+            assert_eq!(amount, "12.3".to_string());
+            assert!(matches!(category, Some(Category::Dining)));
+        }
+
+        assert!(Command::parse("/spent 12.3 dining ascfg", "").is_err())
+    }
+}

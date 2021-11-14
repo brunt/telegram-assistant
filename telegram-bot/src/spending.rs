@@ -1,6 +1,4 @@
-use lazy_static::*;
-use regex::Regex;
-use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse};
+use spending_tracker::{SpentRequest, SpentResponse, SpentTotalResponse};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SpendingAPI {
@@ -8,6 +6,17 @@ pub(crate) struct SpendingAPI {
     pub(crate) spending_reset_url: String,
     pub(crate) spending_add_url: String,
     pub(crate) budget_set_url: String,
+}
+impl Default for SpendingAPI {
+    fn default() -> Self {
+        let spending_base_url = "http://localhost:8001";
+        Self {
+            spending_add_url: format!("{}/spent", spending_base_url),
+            spending_total_url: format!("{}/spent", spending_base_url),
+            spending_reset_url: format!("{}/reset", spending_base_url),
+            budget_set_url: format!("{}/budget", spending_base_url),
+        }
+    }
 }
 
 impl SpendingAPI {
@@ -59,73 +68,5 @@ impl SpendingAPI {
             .json()
             .await?;
         Ok(res)
-    }
-
-    //determine if request was for total, reset, or addition, and perform that action, return a formatted string of the results.
-    pub(crate) async fn parse_spent_request(
-        &self,
-        input: &str,
-        category: Option<Category>,
-    ) -> String {
-        let split: Vec<&str> = input.split(' ').collect();
-        match split[0] {
-            "budget" | "Budget" => match split[1].parse::<f64>() {
-                Ok(amount) => match &self
-                    .budget_set_request(SpentRequest { amount, category })
-                    .await
-                {
-                    Ok(s) => s.to_string(),
-                    Err(_) => "error calling api".to_string(),
-                },
-                Err(_) => "cannot parse that value as float".to_string(),
-            },
-            _ => match split[1] {
-                "reset" => match &self.spending_reset_request().await {
-                    Ok(s) => s.to_string(),
-                    Err(_) => "error calling api".to_string(),
-                },
-                "total" => match &self.spending_total_request().await {
-                    Ok(s) => s.to_string(),
-                    Err(_) => "error calling api".to_string(),
-                },
-                _ => match split[1].parse::<f64>() {
-                    Ok(amount) => match &self
-                        .spending_request(SpentRequest { amount, category })
-                        .await
-                    {
-                        Ok(s) => s.to_string(),
-                        Err(_) => "error calling api".to_string(),
-                    },
-                    Err(_) => "cannot parse that value as float".to_string(),
-                },
-            },
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_is_spent_request() {
-        assert_eq!(is_spent_request("spent total"), true);
-        assert_eq!(is_spent_request("spent reset"), true);
-        assert_eq!(is_spent_request("spent 0.01"), true);
-        assert_eq!(is_spent_request("spent 1000"), true);
-        assert_eq!(is_spent_request("spent -4"), false);
-        assert_eq!(is_spent_request("spent 10.00 travel"), true);
-    }
-
-    #[test]
-    fn test_is_spent_category_request() {
-        assert_eq!(is_spent_category_request("spent 10.00 dining"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 entertainment"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 merchandise"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 travel"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 other"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 grocery"), true);
-        assert_eq!(is_spent_category_request("spent 10.00 something"), false);
-        assert_eq!(is_spent_category_request("spent 10.00"), false);
     }
 }
