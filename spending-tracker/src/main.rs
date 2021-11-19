@@ -3,12 +3,13 @@ extern crate rust_embed;
 
 use actix_cors::Cors;
 use actix_web::{body::Body, get, post, web, App, HttpResponse, HttpServer};
-use actix_web_prom::PrometheusMetrics;
+use actix_web_prom::PrometheusMetricsBuilder;
 use chrono::Local;
 use mime_guess::from_path;
 use rusty_money::{iso, Money};
 use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse, Transaction};
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 #[derive(RustEmbed)]
@@ -33,17 +34,20 @@ async fn main() -> std::io::Result<()> {
         transactions: Vec::new(),
     }));
 
-    let prometheus = PrometheusMetrics::new("spending", Some("/metrics"), None);
+    let prometheus = PrometheusMetricsBuilder::new("spending")
+        .endpoint("/metrics")
+        .const_labels(HashMap::new())
+        .build()
+        .unwrap();
     HttpServer::new(move || {
         App::new()
-            .data(AppState {
+            .app_data(AppState {
                 state: state.to_owned(),
             })
             .wrap(
-                Cors::new()
+                Cors::default()
                     .allowed_origin("localhost")
-                    .allowed_methods(vec!["GET", "POST"])
-                    .finish(),
+                    .allowed_methods(vec!["GET", "POST"]),
             )
             .wrap(prometheus.clone())
             .service(
@@ -157,5 +161,5 @@ async fn index(_req: web::Data<AppState<'_>>) -> HttpResponse {
 
 #[get("/dist/{_:.*}")]
 async fn dist(path: web::Path<String>) -> HttpResponse {
-    handle_embedded_file(&path.0)
+    handle_embedded_file(&path.into_inner())
 }

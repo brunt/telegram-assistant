@@ -1,6 +1,7 @@
 use actix_web::{App, HttpServer};
-use actix_web_prom::PrometheusMetrics;
+use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
 use prometheus::{opts, IntCounterVec};
+use std::collections::HashMap;
 use teloxide::prelude::*;
 
 mod config;
@@ -9,18 +10,18 @@ mod enviroplus;
 mod metro;
 mod spending;
 
+use crate::dispatch::handler;
 use config::Config;
-use dispatch::parse_messages;
 
 #[actix_web::main]
 async fn main() {
-    let prometheus = PrometheusMetrics::new("teloxide", Some("/metrics"), None);
+    let prometheus = PrometheusMetricsBuilder::new("teloxide")
+        .endpoint("/metrics")
+        .const_labels(HashMap::new())
+        .build()
+        .unwrap();
     let counter_opts = opts!("counter", "requests").namespace("teloxide");
     let counter = IntCounterVec::new(counter_opts, &["request"]).unwrap();
-    prometheus
-        .registry
-        .register(Box::new(counter.clone()))
-        .unwrap();
     let config = Config::from_env();
     run_webserver(&config, prometheus);
     run_chatbot(config, counter).await;
@@ -34,13 +35,6 @@ fn run_webserver(config: &Config, prometheus: PrometheusMetrics) {
 }
 
 async fn run_chatbot(config: Config, counter: IntCounterVec) {
-    let bot = Bot::from_env();
-    Dispatcher::new(bot)
-        .messages_handler(move |rx: DispatcherHandlerRx<Message>| {
-            rx.for_each_concurrent(None, move |msg| {
-                parse_messages(msg, config.clone(), counter.clone())
-            })
-        })
-        .dispatch()
-        .await;
+    let bot = Bot::from_env().auto_send();
+    teloxide::repl(bot, move |cx| handler(cx, config.clone(), counter.clone())).await;
 }

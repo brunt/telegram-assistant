@@ -6,6 +6,14 @@ pub(crate) struct EnviroApi {
     pub(crate) url: String,
 }
 
+impl Default for EnviroApi {
+    fn default() -> Self {
+        Self {
+            url: "http://localhost:5000".into(),
+        }
+    }
+}
+
 impl EnviroApi {
     pub(crate) async fn request_data(&self) -> Result<EnviroResponse, reqwest::Error> {
         let data = reqwest::get(&self.url).await?.json().await?;
@@ -48,8 +56,4 @@ impl fmt::Display for GasData {
             self.nh3, self.oxidising, self.reducing
         )
     }
-}
-
-pub(crate) fn help_thermostat() -> &'static str {
-    "Thermostat data from a Pimoroni Enviro+:\nJust say 'Thermostat'"
 }
