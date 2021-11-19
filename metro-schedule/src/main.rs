@@ -2,13 +2,14 @@
 extern crate rust_embed;
 
 use actix_web::{post, web, App, HttpResponse, HttpServer};
-use actix_web_prom::PrometheusMetrics;
+use actix_web_prom::PrometheusMetricsBuilder;
 use anyhow::{bail, Result};
 use chrono::{DateTime, Datelike, Local, Weekday};
 use clap::{App as ClApp, Arg};
 use csv::Reader;
 use metro_schedule::{NextArrivalRequest, NextArrivalResponse, StationTimeSlice};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 #[derive(RustEmbed)]
 #[folder = "data/"]
@@ -21,7 +22,11 @@ async fn main() -> std::io::Result<()> {
         .get_matches();
     let port = args.value_of("port").unwrap_or("8000");
     println!("app starting on port {}", &port);
-    let prometheus = PrometheusMetrics::new("metro", Some("/metrics"), None);
+    let prometheus = PrometheusMetricsBuilder::new("metro")
+        .endpoint("/metrics")
+        .const_labels(HashMap::new())
+        .build()
+        .unwrap();
     HttpServer::new(move || App::new().wrap(prometheus.clone()).service(next_arrival))
         .bind(format!("0.0.0.0:{}", port))?
         .run()
