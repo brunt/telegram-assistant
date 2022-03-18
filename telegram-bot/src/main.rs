@@ -1,6 +1,6 @@
 use actix_web::{App, HttpServer};
 use actix_web_prom::PrometheusMetrics;
-use prometheus::{opts, IntCounterVec};
+use prometheus::{IntCounterVec, opts};
 use teloxide::prelude::*;
 
 mod config;
@@ -12,7 +12,7 @@ mod spending;
 use config::Config;
 use dispatch::parse_messages;
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() {
     let prometheus = PrometheusMetrics::new("teloxide", Some("/metrics"), None);
     let counter_opts = opts!("counter", "requests").namespace("teloxide");
