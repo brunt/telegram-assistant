@@ -1,5 +1,6 @@
 use crate::enviroplus::EnviroApi;
 use crate::metro::MetroScheduleAPI;
+use crate::openweather::OpenWeatherApi;
 use crate::spending::SpendingAPI;
 use std::env;
 use std::sync::Arc;
@@ -10,6 +11,7 @@ pub(crate) struct Config {
     pub(crate) metro_api: Arc<MetroScheduleAPI>,
     pub(crate) enviro_api: Arc<EnviroApi>,
     pub(crate) webserver_port: Arc<str>,
+    pub(crate) openweather: Arc<OpenWeatherApi>,
 }
 
 impl Config {
@@ -34,6 +36,7 @@ impl Config {
             webserver_port: Into::<Arc<str>>::into(
                 env::var("BOT_METRICS_PORT").unwrap_or_else(|_| "8010".to_string()),
             ),
+            openweather: Arc::new(OpenWeatherApi::default()),
         }
     }
 }

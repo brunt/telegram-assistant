@@ -25,7 +25,7 @@ impl fmt::Display for Category {
     }
 }
 
-impl std::convert::From<&str> for Category {
+impl From<&str> for Category {
     fn from(s: &str) -> Self {
         match s {
             "Dining" | "dining" => Self::Dining,
