@@ -1,7 +1,7 @@
+use chrono::prelude::*;
 use core::fmt;
 use serde_derive::{Deserialize, Serialize};
 use std::env;
-use chrono::prelude::*;
 
 #[derive(Debug, Clone)]
 pub(crate) struct OpenWeatherApi {
@@ -25,8 +25,8 @@ impl OpenWeatherApi {
 
     pub(crate) async fn request_data(
         &self,
-        lat: f32,
-        lon: f32,
+        lat: f64,
+        lon: f64,
     ) -> Result<OpenWeatherResponse, reqwest::Error> {
         let url = format!("https://api.openweathermap.org/data/2.5/weather?units={units}&lat={lat}&lon={lon}&appid={app_id}", units = self.units, lat = lat, lon = lon, app_id = self.app_id);
         let data = reqwest::get(&url).await?.json().await?;
@@ -99,13 +99,16 @@ pub(crate) struct Sys {
     pub(crate) id: u32,
     pub(crate) message: Option<f32>,
     pub(crate) country: String,
-    pub(crate) sunrise: u64,
-    pub(crate) sunset: u64,
+    pub(crate) sunrise: i64,
+    pub(crate) sunset: i64,
 }
 
 impl fmt::Display for OpenWeatherResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let sunrise_str = DateTime<Local>::from_timestamp(self.sys.sunrise);
+        // let sunrise_str = DateTime::<Local>::from(self.sys.sunrise);
+        let sunrise_str = Utc.timestamp(self.sys.sunrise, 0);
+        // let sunset_str = DateTime::<Local>::from_timestamp(self.sys.sunset);
+        let sunset_str = Utc.timestamp(self.sys.sunset, 0);
         write!(
             f,
             r#"Weather: {},
@@ -119,19 +122,21 @@ Sunrise: {},
 Sunset: {},
 Wind Speed: {},
 Direction: {},
-Wind Gust: {},
-
-            "#,
-            self.weather.first().map_or("unknown", |w| w.description.as_str()),
+Wind Gust: {}"#,
+            self.weather
+                .first()
+                .map_or("unknown", |w| w.description.as_str()),
             self.main.temp,
             self.main.feels_like,
             self.main.temp_min,
             self.main.temp_max,
             self.main.pressure,
             self.main.humidity,
-            self.sys.sunrise, //todo chrono convert
-            self.sys.sunset,  //todo chrono convert
-
+            sunrise_str,
+            sunset_str,
+            self.wind.speed,
+            self.wind.deg,
+            self.wind.gust,
         )
     }
 }

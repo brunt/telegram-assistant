@@ -71,5 +71,3 @@ pub(crate) fn help_schedule() -> &'static str {
     college\n
     shiloh (shiloh scott)"
 }
-
-
