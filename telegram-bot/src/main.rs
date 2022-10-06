@@ -36,11 +36,6 @@ enum Command {
     // Metro,
 }
 
-/// help -> endpoint
-/// thermostat -> endpoint
-/// spending -> dialogue? -> endpoint
-/// metro -> dialogue? -> endpoint
-
 #[tokio::main]
 async fn main() {
     // let prometheus = PrometheusMetricsBuilder::new("teloxide")
@@ -101,10 +96,13 @@ async fn thermostat(bot: AutoSend<Bot>, msg: Message, config: Config) -> Handler
 
     bot.send_message(
         msg.chat.id,
-        config.enviro_api.request_data().await.map_or(
-            "error getting enviro+ data".to_string(),
-            |resp| resp.to_string(),
-        ),
+        config
+            .enviro_api
+            .request_data()
+            .await
+            .map_or("error getting enviro+ data".to_string(), |resp| {
+                resp.to_string()
+            }),
     )
     .await?;
     Ok(())
@@ -116,17 +114,15 @@ async fn weather_req(
     location: Location,
     config: Config,
 ) -> HandlerResult {
-    dbg!(location);
     bot.send_message(
         msg.chat.id,
         config
             .openweather
             .request_data(location.latitude, location.longitude)
             .await
-            .map_or(
-                "error getting openweather data".to_string(),
-                |resp| resp.to_string(),
-            ),
+            .map_or("error getting openweather data".to_string(), |resp| {
+                resp.to_string()
+            }),
     )
     .await?;
     Ok(())

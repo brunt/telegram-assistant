@@ -50,7 +50,7 @@ pub(crate) struct OpenWeatherResponse {
     pub(crate) clouds: Clouds,
     dt: i32,
     sys: Sys,
-    timezone: i32,
+    timezone: i64,
     id: u32,
     name: String,
     cod: i32,
@@ -81,7 +81,7 @@ pub(crate) struct Main {
 pub(crate) struct Wind {
     pub(crate) speed: f32,
     pub(crate) deg: i32,
-    pub(crate) gust: f32,
+    pub(crate) gust: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,10 +105,6 @@ pub(crate) struct Sys {
 
 impl fmt::Display for OpenWeatherResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // let sunrise_str = DateTime::<Local>::from(self.sys.sunrise);
-        let sunrise_str = Utc.timestamp(self.sys.sunrise, 0);
-        // let sunset_str = DateTime::<Local>::from_timestamp(self.sys.sunset);
-        let sunset_str = Utc.timestamp(self.sys.sunset, 0);
         write!(
             f,
             r#"Weather: {},
@@ -116,13 +112,14 @@ Temperature: {:.2} °F
 Feels like: {:.2} °F
 Min: {:.2} °F
 Max: {:.2} °F
-Pressure: {},
-Humidity: {},
+Cloudiness: {}%
 Sunrise: {},
 Sunset: {},
-Wind Speed: {},
-Direction: {},
-Wind Gust: {}"#,
+Pressure: {} hPa,
+Humidity: {}%,
+Wind Speed: {} mph,
+Direction: {} ({}°),
+Wind Gust: {} mph"#,
             self.weather
                 .first()
                 .map_or("unknown", |w| w.description.as_str()),
@@ -130,13 +127,36 @@ Wind Gust: {}"#,
             self.main.feels_like,
             self.main.temp_min,
             self.main.temp_max,
+            self.clouds.all,
+            Utc.timestamp(self.sys.sunrise + self.timezone, 0)
+                .format("%H:%M:%S"),
+            Utc.timestamp(self.sys.sunset + self.timezone, 0)
+                .format("%H:%M:%S"),
             self.main.pressure,
             self.main.humidity,
-            sunrise_str,
-            sunset_str,
             self.wind.speed,
+            //http://snowfence.umn.edu/Components/winddirectionanddegrees.htm
+            match self.wind.deg {
+                x if !(12..349).contains(&x) => "N",
+                x if (12..34).contains(&x) => "NNE",
+                x if (34..57).contains(&x) => "NE",
+                x if (57..79).contains(&x) => "ENE",
+                x if (79..102).contains(&x) => "E",
+                x if (102..124).contains(&x) => "ESE",
+                x if (124..147).contains(&x) => "SE",
+                x if (147..169).contains(&x) => "SSE",
+                x if (169..192).contains(&x) => "S",
+                x if (192..214).contains(&x) => "SSW",
+                x if (214..237).contains(&x) => "SW",
+                x if (237..259).contains(&x) => "WSW",
+                x if (259..282).contains(&x) => "W",
+                x if (282..304).contains(&x) => "WNW",
+                x if (304..327).contains(&x) => "NW",
+                x if (327..349).contains(&x) => "NNW",
+                _ => "?!",
+            },
             self.wind.deg,
-            self.wind.gust,
+            self.wind.gust.unwrap_or(0.0),
         )
     }
 }
