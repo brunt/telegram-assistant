@@ -10,7 +10,6 @@ pub(crate) struct Config {
     // pub(crate) spending_api: Arc<SpendingAPI>,
     pub(crate) metro_api: Arc<MetroScheduleAPI>,
     pub(crate) enviro_api: Arc<EnviroApi>,
-    pub(crate) webserver_port: Arc<str>,
     pub(crate) openweather: Arc<OpenWeatherApi>,
 }
 
@@ -33,9 +32,9 @@ impl Config {
             enviro_api: Arc::new(
                 env::var("ENVIRO_API_URL").map_or(EnviroApi::default(), |url| EnviroApi { url }),
             ),
-            webserver_port: Into::<Arc<str>>::into(
-                env::var("BOT_METRICS_PORT").unwrap_or_else(|_| "8010".to_string()),
-            ),
+            // webserver_port: Into::<Arc<str>>::into(
+            //     env::var("BOT_METRICS_PORT").unwrap_or_else(|_| "8010".to_string()),
+            // ),
             openweather: Arc::new(OpenWeatherApi::default()),
         }
     }
