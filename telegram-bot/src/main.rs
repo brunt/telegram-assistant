@@ -15,11 +15,14 @@ mod dispatch;
 mod enviroplus;
 mod metro;
 mod openweather;
-mod spending;
+// mod spending;
 
 // use crate::dispatch::handler;
 use crate::openweather::OpenWeatherApi;
 use config::Config;
+use metro_schedule::NextArrivalRequest;
+use crate::metro::help_schedule;
+
 
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
@@ -30,10 +33,11 @@ enum Command {
     Help,
     #[command(description = "Weather data from home, indoors")]
     Thermostat,
-    // #[command(description = "Track Spending")]
-    // Spending,
-    // #[command(description = "STL Metro train schedule")]
-    // Metro,
+    //todo: maybe this should be dialogue as it can be complicated
+    // #[command(description = "Track Spending", parse_with = "split")]
+    // Spending{ amount: f64, category: Option<String>},
+    #[command(description = "STL Metro train schedule", parse_with = "split")]
+    Metro{ station: String, direction: String },
 }
 
 #[tokio::main]
@@ -75,8 +79,7 @@ fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>>
         .branch(
             dptree::entry()
                 .filter_command::<Command>()
-                .branch(case![Command::Help].endpoint(helpmsg))
-                .branch(case![Command::Thermostat].endpoint(thermostat)),
+                .endpoint(commands_handler)
         )
 }
 
@@ -87,13 +90,6 @@ async fn helpmsg(bot: AutoSend<Bot>, msg: Message) -> HandlerResult {
 }
 
 async fn thermostat(bot: AutoSend<Bot>, msg: Message, config: Config) -> HandlerResult {
-    // let res = match config.enviro_api.request_data().await {
-    //     Ok(resp) => resp.to_string(),
-    //     Err(_) => "error getting enviro+ data".to_string(),
-    // };
-    // bot.send_message(msg.chat.id, res).await?;
-    // Ok(())
-
     bot.send_message(
         msg.chat.id,
         config
@@ -126,4 +122,18 @@ async fn weather_req(
     )
     .await?;
     Ok(())
+}
+
+async fn commands_handler(bot: AutoSend<Bot>, msg: Message, cmd: Command, config: Config) -> HandlerResult {
+    match cmd {
+        Command::Metro {station, direction} => {
+            bot.send_message(msg.chat.id, config.metro_api.next_arrival_request(NextArrivalRequest{
+                station,
+                direction,
+            }).await.map_or_else(|_| help_schedule().to_string(), |resp| resp.to_string())).await?;
+            Ok(())
+        },
+        Command::Help => helpmsg(bot, msg).await,
+        Command::Thermostat => thermostat(bot, msg, config).await,
+    }
 }

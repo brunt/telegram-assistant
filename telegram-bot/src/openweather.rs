@@ -19,10 +19,6 @@ impl Default for OpenWeatherApi {
 }
 
 impl OpenWeatherApi {
-    pub(crate) fn new(app_id: String, units: String) -> Self {
-        Self { units, app_id }
-    }
-
     pub(crate) async fn request_data(
         &self,
         lat: f64,
