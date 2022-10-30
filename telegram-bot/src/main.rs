@@ -3,7 +3,8 @@ use teloxide::prelude::*;
 mod config;
 mod dispatch;
 mod enviroplus;
-mod metro;
+// mod metro;
+mod news;
 mod openweather;
 // mod spending;
 

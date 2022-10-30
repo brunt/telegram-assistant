@@ -1,5 +1,6 @@
 use crate::enviroplus::EnviroApi;
-use crate::metro::MetroScheduleAPI;
+// use crate::metro::MetroScheduleAPI;
+use crate::news::NewsAPI;
 use crate::openweather::OpenWeatherApi;
 // use crate::spending::SpendingAPI;
 use std::env;
@@ -8,9 +9,10 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub(crate) struct Config {
     // pub(crate) spending_api: Arc<SpendingAPI>,
-    pub(crate) metro_api: Arc<MetroScheduleAPI>,
+    // pub(crate) metro_api: Arc<MetroScheduleAPI>,
     pub(crate) enviro_api: Arc<EnviroApi>,
     pub(crate) openweather: Arc<OpenWeatherApi>,
+    pub(crate) news_api: Arc<NewsAPI>,
 }
 
 impl Config {
@@ -25,10 +27,10 @@ impl Config {
             //         budget_set_url: format!("{}/budget", spending_base_url),
             //     },
             // )),
-            metro_api: Arc::new(
-                env::var("METRO_API_URL")
-                    .map_or(MetroScheduleAPI::default(), |url| MetroScheduleAPI { url }),
-            ),
+            // metro_api: Arc::new(
+            //     env::var("METRO_API_URL")
+            //         .map_or(MetroScheduleAPI::default(), |url| MetroScheduleAPI { url }),
+            // ),
             enviro_api: Arc::new(
                 env::var("ENVIRO_API_URL").map_or(EnviroApi::default(), |url| EnviroApi { url }),
             ),
@@ -36,6 +38,7 @@ impl Config {
             //     env::var("BOT_METRICS_PORT").unwrap_or_else(|_| "8010".to_string()),
             // ),
             openweather: Arc::new(OpenWeatherApi::default()),
+            news_api: Arc::new(NewsAPI::default()),
         }
     }
 }

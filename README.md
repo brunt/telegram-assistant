@@ -1,10 +1,10 @@
 # My personal Telegram bot
-This is the codebase for my [Telegram](https://telegram.org/) bot. It's a chat bot that I talk to via the Telegram app on my phone and the code in this repository runs on my [Raspberry Pi 3B+](https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/).
+This is the codebase for my [Telegram](https://telegram.org/) bot. It's a chatbot that I talk to via the Telegram app on my phone and the code in this repository runs on my [Raspberry Pi 3B+](https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/).
 I use it to:
 * lookup schedules of St. Louis Metro trains
-* check the weather forecast via [Darksky API](https://darksky.net/poweredby/)
+* check the weather forecast via [OpenWeatherMap](https://openweathermap.org/api)
 * track my spending
-* Email myself a usage report (WIP)
+* Get news articles from [NewsAPI](https://newsapi.org/)
 
 More functionality can be implemented as needed.
 

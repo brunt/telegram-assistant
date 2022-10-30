@@ -7,6 +7,7 @@ use std::env;
 pub(crate) struct OpenWeatherApi {
     pub(crate) units: String,
     pub(crate) app_id: String,
+    pub(crate) url: String,
 }
 
 impl Default for OpenWeatherApi {
@@ -14,6 +15,7 @@ impl Default for OpenWeatherApi {
         Self {
             units: "imperial".to_string(),
             app_id: env::var("OPENWEATHER_API_KEY").expect("missing OPENWEATHER_API_KEY"),
+            url: "https://api.openweathermap.org/data/2.5/weather".to_string(),
         }
     }
 }
@@ -24,7 +26,14 @@ impl OpenWeatherApi {
         lat: f64,
         lon: f64,
     ) -> Result<OpenWeatherResponse, reqwest::Error> {
-        let url = format!("https://api.openweathermap.org/data/2.5/weather?units={units}&lat={lat}&lon={lon}&appid={app_id}", units = self.units, lat = lat, lon = lon, app_id = self.app_id);
+        let url = format!(
+            "{url}?units={units}&lat={lat}&lon={lon}&appid={app_id}",
+            url = self.url,
+            units = self.units,
+            lat = lat,
+            lon = lon,
+            app_id = self.app_id
+        );
         let data = reqwest::get(&url).await?.json().await?;
         Ok(data)
     }
