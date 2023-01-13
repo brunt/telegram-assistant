@@ -47,7 +47,7 @@ pub(crate) fn help_schedule() -> &'static str {
     richmond\n
     clayton\n
     forsyth\n
-    u city\n
+    ucity\n
     skinker\n
     forest park\n
     cwe (central west end)\n

@@ -3,10 +3,12 @@ use teloxide::prelude::*;
 mod config;
 mod dispatch;
 mod enviroplus;
-// mod metro;
+mod metro;
 mod news;
 mod openweather;
-// mod spending;
+mod parser;
+mod spending;
+// mod sysinfo;
 
 use crate::dispatch::schema;
 use config::Config;

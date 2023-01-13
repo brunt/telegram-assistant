@@ -28,7 +28,7 @@ pub(crate) struct Article {
     #[serde(rename = "urlToImage")]
     url_to_image: String,
     #[serde(rename = "publishedAt")]
-    published_at: String, // "2022-10-30T05:07:30Z",
+    published_at: String,
     content: Option<String>,
 }
 
@@ -72,7 +72,7 @@ impl Default for NewsAPI {
 
 impl NewsAPI {
     pub(crate) async fn request_data(&self) -> Result<NewsAPIResponse, reqwest::Error> {
-        let sources = self.sources.to_vec().join(",");
+        let sources = self.sources.join(",");
         let endpoint = format!(
             "{url}?sources={sources}&pageSize={page_size}&apiKey={api_key}",
             url = self.url,

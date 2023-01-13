@@ -2,7 +2,7 @@
 extern crate rust_embed;
 
 use actix_cors::Cors;
-use actix_web::{body::Body, get, post, web, App, HttpResponse, HttpServer};
+use actix_web::{get, post, web, web::JsonBody::Body, App, HttpResponse, HttpServer};
 use actix_web_prom::PrometheusMetricsBuilder;
 use chrono::Local;
 use mime_guess::from_path;

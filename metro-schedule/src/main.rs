@@ -42,8 +42,8 @@ async fn next_arrival(req: web::Json<NextArrivalRequest>) -> HttpResponse {
             Some(file_contents) => {
                 match search_csv(&file_contents, input.station.to_lowercase().as_str(), t) {
                     Ok(s) => match serde_json::to_string(&NextArrivalResponse {
-                        station: input.station,
-                        direction: input.direction,
+                        station: input.station.to_string(),
+                        direction: input.direction.to_string(),
                         line: s.1,
                         time: s.0,
                     }) {
