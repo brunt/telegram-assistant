@@ -133,9 +133,11 @@ Wind Gust: {} mph"#,
             self.main.temp_min,
             self.main.temp_max,
             self.clouds.all,
-            Utc.timestamp(self.sys.sunrise + self.timezone, 0)
+            Utc.timestamp_opt(self.sys.sunrise + self.timezone, 0)
+                .unwrap()
                 .format("%H:%M:%S"),
-            Utc.timestamp(self.sys.sunset + self.timezone, 0)
+            Utc.timestamp_opt(self.sys.sunset + self.timezone, 0)
+                .unwrap()
                 .format("%H:%M:%S"),
             self.main.pressure,
             self.main.humidity,

@@ -1,14 +1,12 @@
 // use sysinfo::SystemExt;
-use crate::{Config, HandlerResult};
-// use metro_schedule::NextArrivalRequest;
 use crate::parser::parse_metro_request;
-use spending_tracker::SpentRequest;
+use crate::{Config, HandlerResult};
+// use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
 use teloxide::prelude::{Message, Requester, Update};
 use teloxide::types::Location;
 use teloxide::utils::command::BotCommands;
 use teloxide::{dptree, Bot};
-use tokio_stream::StreamExt;
 
 #[derive(BotCommands, Clone)]
 #[command(
@@ -20,12 +18,6 @@ enum Command {
     Help,
     #[command(description = "Weather data from home, indoors")]
     Thermostat,
-    //TODO: maybe this should be dialogue as it can be complicated to have all functionality in a single struct
-    // #[command(description = "Track Spending", parse_with = "split")]
-    // Spending{ amount: f64, category: Option<String>},
-    //TODO: fix
-    // #[command(description = "STL Metro train schedule", parse_with = "split")]
-    // Metro { station: String, direction: String },
     #[command(description = "Get some recent news")]
     News,
     // #[command(description = "Get hardware system info for this bot")]
@@ -118,23 +110,10 @@ async fn text_handler(bot: Bot, msg: Message, config: Config) -> HandlerResult {
                             resp.to_string()
                         }),
                 )?,
-            ).await?;
+            )
+            .await?;
         }
     }
-
-    // if let Some(txt) = msg.text() {
-    //
-    //     if is_metro_req(txt) {
-    //         bot.send_message(msg.chat.id, config.metro_api.next_arrival_request(parse_metro_request(txt))
-    //             .await
-    //             .map_or("error getting metro schedule data".to_string(), |resp| resp.to_string()))
-    //             .await?
-    // } else if is_budget_req(txt) {
-    //     bot.send_message(msg.chat.id, config.spending_api.budget_set_request(SpentRequest {
-    //
-    //     }).await.map_or("error".to_string(), |resp| resp.to_string())).await?
-    // }
-    // }
     Ok(())
 }
 

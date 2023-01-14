@@ -1,13 +1,10 @@
-use anyhow::{bail, Result};
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Display, Formatter};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NextArrivalRequest {
-    #[serde(flatten)]
     pub station: Station,
-    #[serde(flatten)]
     pub direction: Direction,
 }
 
@@ -109,7 +106,7 @@ impl Display for NextArrivalResponse {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Station {
     LambertT1,
     LambertT2,
@@ -119,7 +116,7 @@ pub enum Station {
     RockRoad,
     Wellston,
     DelmarLoop,
-    Shrewsberry,
+    Shrewsbury,
     Sunnen,
     MaplewoodManchester,
     Brentwood,
@@ -162,44 +159,44 @@ impl Display for Station {
             Self::RockRoad => write!(f, "Rock Road"),
             Self::Wellston => write!(f, "Wellston"),
             Self::DelmarLoop => write!(f, "Delmar Loop"),
-            Self::Shrewsberry => write!(f, "Shrewsberry"),
+            Self::Shrewsbury => write!(f, "Shrewsberry"),
             Self::Sunnen => write!(f, "Sunnen"),
             Self::MaplewoodManchester => write!(f, "Maplewood Manchester"),
-            Self::Brentwood => write!(f, ""),
-            Self::RichmondHeights => write!(f, ""),
-            Self::Clayton => write!(f, ""),
-            Self::Forsyth => write!(f, ""),
-            Self::UCity => write!(f, ""),
-            Self::Skinker => write!(f, ""),
-            Self::ForestPark => write!(f, ""),
-            Self::CWE => write!(f, ""),
-            Self::Cortex => write!(f, ""),
-            Self::Grand => write!(f, ""),
-            Self::Union => write!(f, ""),
-            Self::CivicCenter => write!(f, ""),
-            Self::Stadium => write!(f, ""),
-            Self::EighthPine => write!(f, ""),
-            Self::ConventionCenter => write!(f, ""),
-            Self::LacledesLanding => write!(f, ""),
-            Self::EastRiverfront => write!(f, ""),
-            Self::FifthMissouri => write!(f, ""),
-            Self::EmersonPark => write!(f, ""),
-            Self::JJK => write!(f, ""),
-            Self::Washington => write!(f, ""),
-            Self::FairviewHeights => write!(f, ""),
-            Self::MemorialHospital => write!(f, ""),
-            Self::Swansea => write!(f, ""),
-            Self::Belleville => write!(f, ""),
-            Self::College => write!(f, ""),
-            Self::ShilohScott => write!(f, ""),
+            Self::Brentwood => write!(f, "Brentwood"),
+            Self::RichmondHeights => write!(f, "Richmond Heights"),
+            Self::Clayton => write!(f, "Clayton"),
+            Self::Forsyth => write!(f, "Forsyth"),
+            Self::UCity => write!(f, "University City"),
+            Self::Skinker => write!(f, "Skinker"),
+            Self::ForestPark => write!(f, "Forest Park"),
+            Self::CWE => write!(f, "Central West End"),
+            Self::Cortex => write!(f, "Cortex"),
+            Self::Grand => write!(f, "Grand"),
+            Self::Union => write!(f, "Union"),
+            Self::CivicCenter => write!(f, "Civic Center"),
+            Self::Stadium => write!(f, "Stadium"),
+            Self::EighthPine => write!(f, "Eighth and Pine"),
+            Self::ConventionCenter => write!(f, "Convention Center"),
+            Self::LacledesLanding => write!(f, "Lacledes Landing"),
+            Self::EastRiverfront => write!(f, "East Riverfront"),
+            Self::FifthMissouri => write!(f, "Fifth and Missouri"),
+            Self::EmersonPark => write!(f, "Emerson Park"),
+            Self::JJK => write!(f, "JJK"),
+            Self::Washington => write!(f, "Washington"),
+            Self::FairviewHeights => write!(f, "Fairview Heights"),
+            Self::MemorialHospital => write!(f, "Memorial Hospital"),
+            Self::Swansea => write!(f, "Swansea"),
+            Self::Belleville => write!(f, "Belleville"),
+            Self::College => write!(f, "College"),
+            Self::ShilohScott => write!(f, "Shiloh Scott"),
         }
     }
 }
 
 impl TryFrom<&str> for Station {
-    type Error = anyhow::Error;
+    type Error = String;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "lambert" => Ok(Self::LambertT1),
             "lambert2" => Ok(Self::LambertT2),
@@ -209,7 +206,7 @@ impl TryFrom<&str> for Station {
             "rock road" => Ok(Self::RockRoad),
             "wellston" => Ok(Self::Wellston),
             "delmar" => Ok(Self::DelmarLoop),
-            "shrewsbury" => Ok(Self::Shrewsberry),
+            "shrewsbury" => Ok(Self::Shrewsbury),
             "sunnen" => Ok(Self::Sunnen),
             "maplewood" => Ok(Self::MaplewoodManchester),
             "brentwood" => Ok(Self::Brentwood),
@@ -239,57 +236,12 @@ impl TryFrom<&str> for Station {
             "belleville" => Ok(Self::Belleville),
             "college" => Ok(Self::College),
             "shiloh" | "shiloh scott" => Ok(Self::ShilohScott),
-            _ => bail!("no station by that name"),
+            _ => Err(String::from("no station by that name")),
         }
     }
 }
 
-impl Into<&'static str> for Station {
-    fn into(self) -> &'static str {
-        match self {
-            Self::LambertT1 => "lambert",
-            Self::LambertT2 => "lambert2",
-            Self::NorthHanley => "hanley",
-            Self::UMSLNorth => "umsl north",
-            Self::UMSLSouth => "umsl south",
-            Self::RockRoad => "rock road",
-            Self::Wellston => "wellston",
-            Self::DelmarLoop => "delmar",
-            Self::Shrewsberry => "shrewsbury",
-            Self::Sunnen => "sunnen",
-            Self::MaplewoodManchester => "maplewood",
-            Self::Brentwood => "brentwood",
-            Self::RichmondHeights => "richmond",
-            Self::Clayton => "clayton",
-            Self::Forsyth => "forsyth",
-            Self::UCity => "ucity",
-            Self::Skinker => "skinker",
-            Self::ForestPark => "forest park",
-            Self::CWE => "cwe",
-            Self::Cortex => "cortex",
-            Self::Grand => "grand",
-            Self::Union => "union",
-            Self::CivicCenter => "civic",
-            Self::Stadium => "stadium",
-            Self::EighthPine => "8th pine",
-            Self::ConventionCenter => "convention",
-            Self::LacledesLanding => "lacledes",
-            Self::EastRiverfront => "riverfront",
-            Self::FifthMissouri => "5th missouri",
-            Self::EmersonPark => "emerson",
-            Self::JJK => "jjk",
-            Self::Washington => "washington",
-            Self::FairviewHeights => "fvh",
-            Self::MemorialHospital => "memorial",
-            Self::Swansea => "swansea",
-            Self::Belleville => "belleville",
-            Self::College => "college",
-            Self::ShilohScott => "shiloh",
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Direction {
     East,
     West,

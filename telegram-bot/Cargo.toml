@@ -19,4 +19,3 @@ tokio-stream = "0.1.11"
 spending-tracker = { package = "spending-tracker", path = "../spending-tracker" }
 metro-schedule = { package = "metro-schedule", path = "../metro-schedule" }
 nom = "7.1.2"
-anyhow = "1.0.68"

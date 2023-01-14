@@ -1,8 +1,6 @@
-use anyhow::{anyhow, bail, Result};
-use chrono::format::parse;
 use metro_schedule::{Direction, NextArrivalRequest, Station};
 use nom::branch::alt;
-use nom::bytes::complete::{tag, tag_no_case};
+use nom::bytes::complete::tag_no_case;
 use nom::character::complete::space1;
 use nom::combinator::map_res;
 use nom::sequence::separated_pair;
@@ -20,7 +18,10 @@ fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
 }
 
 fn parse_direction(s: &str) -> IResult<&str, Direction> {
-    map_res(alt((tag_no_case("west"), tag_no_case("east"))), Direction::try_from)(s)
+    map_res(
+        alt((tag_no_case("west"), tag_no_case("east"))),
+        Direction::try_from,
+    )(s)
 }
 
 fn parse_station(s: &str) -> IResult<&str, Station> {

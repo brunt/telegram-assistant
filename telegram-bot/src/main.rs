@@ -7,7 +7,7 @@ mod metro;
 mod news;
 mod openweather;
 mod parser;
-mod spending;
+// mod spending;
 // mod sysinfo;
 
 use crate::dispatch::schema;
