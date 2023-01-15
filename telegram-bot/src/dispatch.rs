@@ -101,15 +101,13 @@ async fn text_handler(bot: Bot, msg: Message, config: Config) -> HandlerResult {
         if let Some(metro_req) = parse_metro_request(txt) {
             bot.send_message(
                 msg.chat.id,
-                serde_json::to_string(
-                    &config
-                        .metro_api
-                        .next_arrival_request(metro_req)
-                        .await
-                        .map_or("error getting metro schedule data".to_string(), |resp| {
-                            resp.to_string()
-                        }),
-                )?,
+                &config
+                    .metro_api
+                    .next_arrival_request(metro_req)
+                    .await
+                    .map_or("error getting metro schedule data".to_string(), |resp| {
+                        resp.to_string()
+                    }),
             )
             .await?;
         }

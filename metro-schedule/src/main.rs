@@ -1,62 +1,58 @@
 #[macro_use]
 extern crate rust_embed;
 
-use actix_web::{post, web, App, HttpResponse, HttpServer};
-use actix_web_prom::PrometheusMetricsBuilder;
 use anyhow::{bail, Result};
+use axum::{http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use chrono::{DateTime, Datelike, Local, Timelike, Weekday};
-use clap::{App as ClApp, Arg};
+use clap::{arg, command};
 use csv::Reader;
 use metro_schedule::{
     Direction, NextArrivalRequest, NextArrivalResponse, Station, StationTimeSlice,
 };
-use std::collections::HashMap;
+use std::net::SocketAddr;
 
 #[derive(RustEmbed)]
 #[folder = "data/"]
 struct Asset;
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let args = ClApp::new("metro-schedule-api")
-        .arg(Arg::with_name("port").help("port number for webserver"))
+#[tokio::main]
+async fn main() {
+    let cmd = command!()
+        .arg(arg!( -p --port [port] "port number for webserver").required(false))
         .get_matches();
-    let port = args.value_of("port").unwrap_or("8000");
-    println!("app starting on port {}", &port);
-    let prometheus = PrometheusMetricsBuilder::new("metro")
-        .endpoint("/metrics")
-        .const_labels(HashMap::new())
-        .build()
-        .unwrap();
-    HttpServer::new(move || App::new().wrap(prometheus.clone()).service(next_arrival))
-        .bind(format!("0.0.0.0:{}", port))?
-        .run()
+    let port = cmd.get_one::<String>("port");
+    let app = Router::new().route("/next-arrival", post(next_arrival));
+    let addr = SocketAddr::from((
+        [0, 0, 0, 0],
+        port.map_or(8000, |p| p.parse().unwrap_or(8000)),
+    ));
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
         .await
+        .expect("port already in use?");
 }
 
-#[post("/next-arrival")]
-async fn next_arrival(req: web::Json<NextArrivalRequest>) -> HttpResponse {
-    let input = req.into_inner();
+async fn next_arrival(Json(req): Json<NextArrivalRequest>) -> impl IntoResponse {
     let t = Local::now();
-    let data = parse_request_pick_file(t, &input.direction);
-    match Asset::get(&data) {
-        Some(file_contents) => match search_csv(&file_contents, &input.station, t) {
-            Ok(s) => match serde_json::to_string(&NextArrivalResponse {
-                station: input.station,
-                direction: input.direction,
-                line: s.1,
-                time: s.0,
-            }) {
-                Ok(s) => HttpResponse::Ok().content_type("application/json").body(s),
-                Err(_) => HttpResponse::InternalServerError().into(),
-            },
-            Err(_) => HttpResponse::InternalServerError().into(),
+    let filename = choose_file_for_request(t, &req.direction);
+    match Asset::get(&filename) {
+        Some(schedule) => match find_next_arrival(&schedule.data, &req.station, t) {
+            Ok(s) => (
+                StatusCode::OK,
+                Json(Some(NextArrivalResponse {
+                    station: req.station,
+                    direction: req.direction,
+                    line: s.1,
+                    time: s.0,
+                })),
+            ),
+            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
         },
-        None => HttpResponse::InternalServerError().into(),
+        None => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
     }
 }
 
-fn parse_request_pick_file(t: DateTime<Local>, direction: &Direction) -> String {
+fn choose_file_for_request(t: DateTime<Local>, direction: &Direction) -> String {
     format!(
         "{}bound-{}-schedule.csv",
         direction.to_string().to_lowercase(),
@@ -82,7 +78,7 @@ macro_rules! search_station {
     };
 }
 
-fn search_csv(
+fn find_next_arrival(
     file_contents: &[u8],
     station: &Station,
     t: DateTime<Local>,

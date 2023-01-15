@@ -100,7 +100,10 @@ impl Display for NextArrivalResponse {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
-            "station: {}\ndirection: {}\nline: {}\ntime: {}",
+            r#"station: {}
+direction: {}
+line: {}
+time: {}"#,
             self.station, self.direction, self.line, self.time
         )
     }
