@@ -1,17 +1,18 @@
 [package]
 name = "metro-schedule"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Bryant Deters <bryantdeters@gmail.com"]
 edition = "2021"
 
 [dependencies]
-actix-web = "4.0.0-beta.10"
-actix-web-prom = "0.6.0-beta.3"
+axum = "0.6.2"
 anyhow = "1"
-clap = "2.33.0"
+clap = {version = "4.1.1", features = ["cargo"]}
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-chrono = "0.4"
+chrono = "0.4.23"
 csv = "1"
-rust-embed = "5"
+rust-embed = "6.4.2"
+nom = "7.1.1"
+tokio = { version = "1.24.1", features = ["full"] }

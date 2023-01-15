@@ -1,40 +1,41 @@
-use actix_web::{App, HttpServer};
-use actix_web_prom::{PrometheusMetrics, PrometheusMetricsBuilder};
-use prometheus::{opts, IntCounterVec};
-use std::collections::HashMap;
 use teloxide::prelude::*;
 
 mod config;
 mod dispatch;
 mod enviroplus;
 mod metro;
-mod spending;
+mod news;
+mod openweather;
+mod parser;
+// mod spending;
+// mod sysinfo;
 
-use crate::dispatch::handler;
+use crate::dispatch::schema;
 use config::Config;
 
-#[actix_web::main]
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+#[tokio::main]
 async fn main() {
-    let prometheus = PrometheusMetricsBuilder::new("teloxide")
-        .endpoint("/metrics")
-        .const_labels(HashMap::new())
-        .build()
-        .unwrap();
-    let counter_opts = opts!("counter", "requests").namespace("teloxide");
-    let counter = IntCounterVec::new(counter_opts, &["request"]).unwrap();
+    //TODO: replace actix with axum, re-add prometheus metrics
     let config = Config::from_env();
-    run_webserver(&config, prometheus);
-    run_chatbot(config, counter).await;
+    // run_webserver(&config, prometheus);
+    run_chatbot(config).await;
 }
 
-fn run_webserver(config: &Config, prometheus: PrometheusMetrics) {
-    HttpServer::new(move || App::new().wrap(prometheus.clone()))
-        .bind(format!("0.0.0.0:{}", &config.webserver_port))
-        .expect("address in use")
-        .run();
-}
+// fn run_webserver(config: &Config, prometheus: PrometheusMetrics) {
+//     HttpServer::new(move || App::new().wrap(prometheus.clone()))
+//         .bind(format!("0.0.0.0:{}", &config.webserver_port))
+//         .expect("address in use")
+//         .run();
+// }
 
-async fn run_chatbot(config: Config, counter: IntCounterVec) {
-    let bot = Bot::from_env().auto_send();
-    teloxide::repl(bot, move |cx| handler(cx, config.clone(), counter.clone())).await;
+async fn run_chatbot(config: Config) {
+    let bot = Bot::from_env();
+
+    Dispatcher::builder(bot, schema())
+        .dependencies(dptree::deps![config])
+        .build()
+        .dispatch()
+        .await;
 }

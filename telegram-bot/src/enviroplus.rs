@@ -42,7 +42,7 @@ impl fmt::Display for EnviroResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Temperature: {:.2} °C\nLight: {:.2} Lux\nPressure: {:.2} hPa\nRelative Humidity: {:.2}%\n\nAir data:\n{:.2}",
+            "Temperature: {:.2} °F\nLight: {:.2} Lux\nPressure: {:.2} hPa\nRelative Humidity: {:.2}%\n\nAir data:\n{:.2}",
             self.temperature, self.light, self.pressure, self.humidity, self.gas
         )
     }
