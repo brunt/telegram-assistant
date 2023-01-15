@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "spending-tracker",
+#    "spending-tracker",
     "metro-schedule",
     "telegram-bot",
 ]
