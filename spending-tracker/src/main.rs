@@ -12,6 +12,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
+
 #[derive(RustEmbed)]
 #[folder = "public/"]
 struct Asset;
@@ -26,7 +27,7 @@ struct StateTotal<'a> {
     transactions: Vec<Transaction>,
 }
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     let state = Arc::new(RwLock::new(StateTotal {
         budget: Money::from_major(500, iso::USD),
@@ -34,11 +35,6 @@ async fn main() -> std::io::Result<()> {
         transactions: Vec::new(),
     }));
 
-    let prometheus = PrometheusMetricsBuilder::new("spending")
-        .endpoint("/metrics")
-        .const_labels(HashMap::new())
-        .build()
-        .unwrap();
     HttpServer::new(move || {
         App::new()
             .app_data(AppState {
@@ -163,3 +159,24 @@ async fn index(_req: web::Data<AppState<'_>>) -> HttpResponse {
 async fn dist(path: web::Path<String>) -> HttpResponse {
     handle_embedded_file(&path.into_inner())
 }
+
+//
+// pub struct StaticFile<T>(pub T);
+//
+// impl<T> IntoResponse for StaticFile<T>
+//     where
+//         T: Into<String>,
+// {
+//     fn into_response(self) -> Response {
+//         let path = self.0.into();
+//
+//         match Asset::get(path.as_str()) {
+//             Some(content) => {
+//                 let body = boxed(Full::from(content.data));
+//                 let mime = mime_guess::from_path(path).first_or_octet_stream();
+//                 Response::builder().header(header::CONTENT_TYPE, mime.as_ref()).body(body).unwrap()
+//             }
+//             None => Response::builder().status(StatusCode::NOT_FOUND).body(boxed(Full::from("404"))).unwrap(),
+//         }
+//     }
+// }
