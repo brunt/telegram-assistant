@@ -106,6 +106,6 @@ impl Display for NewsAPIResponse {
                 article.title, article.description, article.url
             ));
         }
-        write!(f, "{}", resp_str)
+        write!(f, "{resp_str}")
     }
 }

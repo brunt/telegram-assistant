@@ -1,22 +1,27 @@
-#[macro_use]
-extern crate rust_embed;
-
-use actix_cors::Cors;
-use actix_web::{get, post, web, web::JsonBody::Body, App, HttpResponse, HttpServer};
-use actix_web_prom::PrometheusMetricsBuilder;
+use axum::body::{boxed, Full};
+use axum::http::{header, HeaderValue, Uri};
+use axum::response::Html;
+use axum::{
+    extract::{Json, State},
+    http::{Method, StatusCode},
+    response::{IntoResponse, Response},
+    routing::{get, post},
+    Router,
+};
 use chrono::Local;
-use mime_guess::from_path;
+use clap::{arg, command};
+use rust_embed::RustEmbed;
 use rusty_money::{iso, Money};
 use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse, Transaction};
-use std::borrow::Cow;
-use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
-
+use tower_http::cors::CorsLayer;
 
 #[derive(RustEmbed)]
 #[folder = "public/"]
 struct Asset;
 
+#[derive(Clone)]
 struct AppState<'a> {
     state: Arc<RwLock<StateTotal<'a>>>,
 }
@@ -27,156 +32,156 @@ struct StateTotal<'a> {
     transactions: Vec<Transaction>,
 }
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let state = Arc::new(RwLock::new(StateTotal {
-        budget: Money::from_major(500, iso::USD),
-        total: Money::from_minor(0, iso::USD),
-        transactions: Vec::new(),
-    }));
-
-    HttpServer::new(move || {
-        App::new()
-            .app_data(AppState {
-                state: state.to_owned(),
-            })
-            .wrap(
-                Cors::default()
-                    .allowed_origin("localhost")
-                    .allowed_methods(vec!["GET", "POST"]),
-            )
-            .wrap(prometheus.clone())
-            .service(
-                web::resource("/spent")
-                    .route(web::post().to(spent))
-                    .route(web::get().to(spent_total)),
-            )
-            .service(reset)
-            .service(set_budget)
-            .service(index)
-            .service(dist)
-    })
-    .bind("0.0.0.0:8001")?
-    .run()
-    .await
-}
-
-async fn spent(state: web::Data<AppState<'_>>, req: web::Json<SpentRequest>) -> HttpResponse {
-    let spent = req.into_inner();
-    let add = Money::from_minor((spent.amount * 100.0).round() as i64, iso::USD);
-    match state.state.write() {
-        Ok(mut state) => {
-            state.total += add.clone();
-            state.transactions.push(Transaction {
-                amount: add.to_string(),
-                category: spent.category.unwrap_or(Category::Other).to_string(),
-                time: Local::now().to_string(),
-            });
-            match serde_json::to_string(&SpentResponse {
-                total: (state.budget.clone() - state.total.clone()).to_string(),
-            }) {
-                Ok(s) => HttpResponse::Ok().content_type("application/json").body(s),
-                Err(_) => HttpResponse::InternalServerError().into(),
-            }
-        }
-        Err(_) => HttpResponse::InternalServerError().into(),
-    }
-}
-
-async fn spent_total(req: web::Data<AppState<'_>>) -> HttpResponse {
-    match req.state.read() {
-        Ok(i) => match serde_json::to_string(&SpentTotalResponse {
-            budget: i.budget.clone().to_string(),
-            total: i.total.clone().to_string(),
-            transactions: i.transactions.clone(),
-        }) {
-            Ok(s) => HttpResponse::Ok().content_type("application/json").body(s),
-            Err(_) => HttpResponse::InternalServerError().into(),
-        },
-        Err(_) => HttpResponse::InternalServerError().into(),
-    }
-}
-
-#[get("/reset")]
-async fn reset(req: web::Data<AppState<'_>>) -> HttpResponse {
-    match req.state.write() {
-        Ok(mut i) => {
-            i.budget = Money::from_major(500, iso::USD);
-            i.total = Money::from_minor(0, iso::USD);
-            i.transactions = Vec::new();
-            match serde_json::to_string(&SpentTotalResponse {
-                budget: i.budget.clone().to_string(),
-                total: i.total.clone().to_string(),
+impl AppState<'_> {
+    fn new() -> Self {
+        Self {
+            state: Arc::new(RwLock::new(StateTotal {
+                budget: Money::from_major(500, iso::USD),
+                total: Money::from_minor(0, iso::USD),
                 transactions: Vec::new(),
-            }) {
-                Ok(s) => HttpResponse::Ok().content_type("application/json").body(s),
-                Err(_) => HttpResponse::InternalServerError().into(),
+            })),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let cmd = command!()
+        .arg(arg!( -p --port [port] "port number for webserver").required(false))
+        .get_matches();
+    let port = cmd.get_one::<String>("port");
+    let state = AppState::new();
+    let app = Router::new()
+        .route("/budget", post(set_budget))
+        .route("/spent", post(spent).get(spent_total))
+        .route("/reset", get(reset))
+        .route("/dist/*file", get(static_handler))
+        .route("/", get(index))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(
+                    format!("http://localhost:{}", port.unwrap_or(&"8001".to_string()))
+                        .parse::<HeaderValue>()
+                        .unwrap(),
+                )
+                .allow_methods([Method::GET, Method::POST]),
+        )
+        .fallback_service(get(not_found))
+        .with_state(state);
+
+    let addr = SocketAddr::from((
+        [0, 0, 0, 0],
+        port.map_or(8001, |p| p.parse().unwrap_or(8001)),
+    ));
+
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .expect("port already in use?");
+}
+
+async fn spent(State(state): State<AppState<'_>>, Json(req): Json<SpentRequest>) -> Response {
+    if let Ok(mut state) = state.state.write() {
+        let add = Money::from_minor((req.amount * 100.0).round() as i64, iso::USD);
+        state.total += add.clone();
+        state.transactions.push(Transaction {
+            amount: add.to_string(),
+            category: req.category.unwrap_or(Category::Other).to_string(),
+            time: Local::now().to_string(),
+        });
+        return Json(SpentResponse {
+            total: (state.budget.clone() - state.total.clone()).to_string(),
+        })
+        .into_response();
+    }
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+}
+
+async fn spent_total(State(app_state): State<AppState<'_>>) -> Response {
+    if let Ok(state) = app_state.state.read() {
+        return Json(SpentTotalResponse {
+            budget: state.budget.to_string(),
+            total: state.total.to_string(),
+            transactions: state.transactions.clone(),
+        })
+        .into_response();
+    }
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+}
+
+async fn reset(State(app_state): State<AppState<'_>>) -> Response {
+    if let Ok(mut state) = app_state.state.write() {
+        state.budget = Money::from_major(500, iso::USD);
+        state.total = Money::from_minor(0, iso::USD);
+        state.transactions = Vec::new();
+        return Json(SpentTotalResponse {
+            budget: state.budget.clone().to_string(),
+            total: state.total.clone().to_string(),
+            transactions: Vec::new(),
+        })
+        .into_response();
+    }
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+}
+
+async fn set_budget(
+    State(app_state): State<AppState<'_>>,
+    Json(req): Json<SpentRequest>,
+) -> Response {
+    if let Ok(mut state) = app_state.state.write() {
+        state.budget = Money::from_minor((req.amount * 100.0).round() as i64, iso::USD);
+        return Json(SpentTotalResponse {
+            budget: state.budget.clone().to_string(),
+            total: state.total.clone().to_string(),
+            transactions: state.transactions.clone(),
+        })
+        .into_response();
+    }
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+}
+
+async fn index() -> Response {
+    static_handler("/index.html".parse::<Uri>().unwrap())
+        .await
+        .into_response()
+}
+
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let mut path = uri.path().trim_start_matches('/').to_string();
+
+    if path.starts_with("dist/") {
+        path = path.replace("dist/", "");
+    }
+
+    StaticFile(path)
+}
+
+async fn not_found() -> Html<&'static str> {
+    Html("<h1>404</h1><p>Not Found</p>")
+}
+
+pub struct StaticFile<T>(pub T);
+
+impl<T> IntoResponse for StaticFile<T>
+where
+    T: Into<String>,
+{
+    fn into_response(self) -> Response {
+        let path = self.0.into();
+
+        match Asset::get(path.as_str()) {
+            Some(content) => {
+                let body = boxed(Full::from(content.data));
+                let mime = mime_guess::from_path(path).first_or_octet_stream();
+                Response::builder()
+                    .header(header::CONTENT_TYPE, mime.as_ref())
+                    .body(body)
+                    .unwrap()
             }
+            None => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(boxed(Full::from("404")))
+                .unwrap(),
         }
-        Err(_) => HttpResponse::InternalServerError().into(),
     }
 }
-
-#[post("/budget")]
-async fn set_budget(state: web::Data<AppState<'_>>, req: web::Json<SpentRequest>) -> HttpResponse {
-    match state.state.write() {
-        Ok(mut i) => {
-            i.budget = Money::from_minor((req.amount * 100.0).round() as i64, iso::USD);
-            match serde_json::to_string(&SpentTotalResponse {
-                budget: i.budget.clone().to_string(),
-                total: i.total.clone().to_string(),
-                transactions: i.transactions.clone(),
-            }) {
-                Ok(s) => HttpResponse::Ok().content_type("application/json").body(s),
-                Err(_) => HttpResponse::InternalServerError().into(),
-            }
-        }
-        Err(_) => HttpResponse::InternalServerError().into(),
-    }
-}
-
-fn handle_embedded_file(path: &str) -> HttpResponse {
-    match Asset::get(path) {
-        Some(content) => {
-            let body: Body = match content {
-                Cow::Borrowed(bytes) => bytes.into(),
-                Cow::Owned(bytes) => bytes.into(),
-            };
-            HttpResponse::Ok()
-                .content_type(from_path(path).first_or_octet_stream().to_string())
-                .body(body)
-        }
-        None => HttpResponse::NotFound().body("404 Not Found"),
-    }
-}
-
-#[get("/")]
-async fn index(_req: web::Data<AppState<'_>>) -> HttpResponse {
-    handle_embedded_file("index.html")
-}
-
-#[get("/dist/{_:.*}")]
-async fn dist(path: web::Path<String>) -> HttpResponse {
-    handle_embedded_file(&path.into_inner())
-}
-
-//
-// pub struct StaticFile<T>(pub T);
-//
-// impl<T> IntoResponse for StaticFile<T>
-//     where
-//         T: Into<String>,
-// {
-//     fn into_response(self) -> Response {
-//         let path = self.0.into();
-//
-//         match Asset::get(path.as_str()) {
-//             Some(content) => {
-//                 let body = boxed(Full::from(content.data));
-//                 let mime = mime_guess::from_path(path).first_or_octet_stream();
-//                 Response::builder().header(header::CONTENT_TYPE, mime.as_ref()).body(body).unwrap()
-//             }
-//             None => Response::builder().status(StatusCode::NOT_FOUND).body(boxed(Full::from("404"))).unwrap(),
-//         }
-//     }
-// }

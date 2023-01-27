@@ -2,7 +2,12 @@
 extern crate rust_embed;
 
 use anyhow::{bail, Result};
-use axum::{http::StatusCode, response::IntoResponse, routing::post, Json, Router};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::post,
+    Json, Router,
+};
 use chrono::{DateTime, Datelike, Local, Timelike, Weekday};
 use clap::{arg, command};
 use csv::Reader;
@@ -32,24 +37,22 @@ async fn main() {
         .expect("port already in use?");
 }
 
-async fn next_arrival(Json(req): Json<NextArrivalRequest>) -> impl IntoResponse {
+async fn next_arrival(Json(req): Json<NextArrivalRequest>) -> Response {
     let t = Local::now();
     let filename = choose_file_for_request(t, &req.direction);
-    match Asset::get(&filename) {
-        Some(schedule) => match find_next_arrival(&schedule.data, &req.station, t) {
-            Ok(s) => (
-                StatusCode::OK,
-                Json(Some(NextArrivalResponse {
-                    station: req.station,
-                    direction: req.direction,
-                    line: s.1,
-                    time: s.0,
-                })),
-            ),
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
-        },
-        None => (StatusCode::INTERNAL_SERVER_ERROR, Json(None)),
+
+    if let Some(schedule) = Asset::get(&filename) {
+        if let Ok(s) = find_next_arrival(&schedule.data, &req.station, t) {
+            return Json(NextArrivalResponse {
+                station: req.station,
+                direction: req.direction,
+                line: s.1,
+                time: s.0,
+            })
+            .into_response();
+        }
     }
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
 }
 
 fn choose_file_for_request(t: DateTime<Local>, direction: &Direction) -> String {
