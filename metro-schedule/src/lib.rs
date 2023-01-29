@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NextArrivalRequest {
     pub station: Station,
     pub direction: Direction,
@@ -109,7 +109,7 @@ time: {}"#,
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Station {
     LambertT1,
     LambertT2,
@@ -244,7 +244,7 @@ impl TryFrom<&str> for Station {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Direction {
     East,
     West,

@@ -41,9 +41,9 @@ impl From<&str> for Category {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct SpentRequest {
-    pub amount: f64,
+    pub amount: f32,
     pub category: Option<Category>,
 }
 

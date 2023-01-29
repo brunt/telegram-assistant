@@ -11,10 +11,10 @@ impl Default for SpendingAPI {
     fn default() -> Self {
         let spending_base_url = "http://localhost:8001";
         Self {
-            spending_add_url: format!("{}/spent", spending_base_url),
-            spending_total_url: format!("{}/spent", spending_base_url),
-            spending_reset_url: format!("{}/reset", spending_base_url),
-            budget_set_url: format!("{}/budget", spending_base_url),
+            spending_add_url: format!("{spending_base_url}/spent"),
+            spending_total_url: format!("{spending_base_url}/spent"),
+            spending_reset_url: format!("{spending_base_url}/reset"),
+            budget_set_url: format!("{spending_base_url}/budget"),
         }
     }
 }

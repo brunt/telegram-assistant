@@ -1,7 +1,11 @@
 // use sysinfo::SystemExt;
-use crate::parser::parse_metro_request;
+use crate::parser::{
+    is_spending_reset_request, is_spending_total_request, parse_budget_request,
+    parse_metro_request, parse_spending_request,
+};
 use crate::{Config, HandlerResult};
-// use spending_tracker::SpentRequest;
+use metro_schedule::NextArrivalRequest;
+use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
 use teloxide::prelude::{Message, Requester, Update};
 use teloxide::types::Location;
@@ -32,28 +36,45 @@ pub(crate) fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync 
                 .filter_command::<Command>()
                 .endpoint(commands_handler),
         )
-        .branch(dptree::entry().endpoint(text_handler))
+        .branch(
+            Message::filter_text()
+                .filter_map(parse_metro_request)
+                .endpoint(metro_endpoint),
+        )
+        .branch(
+            Message::filter_text()
+                .filter(is_spending_reset_request)
+                .endpoint(spending_reset_endpoint),
+        )
+        .branch(
+            Message::filter_text()
+                .filter(is_spending_total_request)
+                .endpoint(spending_total_endpoint),
+        )
+        .branch(
+            Message::filter_text()
+                .filter_map(parse_spending_request)
+                .endpoint(spending_endpoint),
+        )
+        .branch(
+            Message::filter_text()
+                .filter_map(parse_budget_request)
+                .endpoint(budget_endpoint),
+        )
 }
 
-async fn helpmsg(bot: Bot, msg: Message) -> HandlerResult {
-    bot.send_message(msg.chat.id, Command::descriptions().to_string())
-        .await?;
-    Ok(())
+fn helpmsg() -> String {
+    Command::descriptions().to_string()
 }
 
-async fn thermostat(bot: Bot, msg: Message, config: Config) -> HandlerResult {
-    bot.send_message(
-        msg.chat.id,
-        config
-            .enviro_api
-            .request_data()
-            .await
-            .map_or("error getting enviro+ data".to_string(), |resp| {
-                resp.to_string()
-            }),
-    )
-    .await?;
-    Ok(())
+async fn thermostat(config: Config) -> String {
+    config
+        .enviro_api
+        .request_data()
+        .await
+        .map_or("error getting enviro+ data".to_string(), |resp| {
+            resp.to_string()
+        })
 }
 
 async fn weather_req(bot: Bot, msg: Message, location: Location, config: Config) -> HandlerResult {
@@ -71,19 +92,14 @@ async fn weather_req(bot: Bot, msg: Message, location: Location, config: Config)
     Ok(())
 }
 
-async fn get_news(bot: Bot, msg: Message, config: Config) -> HandlerResult {
-    bot.send_message(
-        msg.chat.id,
-        config
-            .news_api
-            .request_data()
-            .await
-            .map_or("error getting news data".to_string(), |resp| {
-                resp.to_string()
-            }),
-    )
-    .await?;
-    Ok(())
+async fn get_news(config: Config) -> String {
+    config
+        .news_api
+        .request_data()
+        .await
+        .map_or("error getting news data".to_string(), |resp| {
+            resp.to_string()
+        })
 }
 
 // async fn get_sysinfo(bot: Bot, msg: Message, mut config: Config) -> HandlerResult {
@@ -96,30 +112,105 @@ async fn get_news(bot: Bot, msg: Message, config: Config) -> HandlerResult {
 //     Ok(())
 // }
 
-async fn text_handler(bot: Bot, msg: Message, config: Config) -> HandlerResult {
-    if let Some(txt) = msg.text() {
-        if let Some(metro_req) = parse_metro_request(txt) {
-            bot.send_message(
-                msg.chat.id,
-                &config
-                    .metro_api
-                    .next_arrival_request(metro_req)
-                    .await
-                    .map_or("error getting metro schedule data".to_string(), |resp| {
-                        resp.to_string()
-                    }),
-            )
-            .await?;
-        }
-    }
+async fn metro_endpoint(
+    bot: Bot,
+    msg: Message,
+    req: NextArrivalRequest,
+    config: Config,
+) -> HandlerResult {
+    bot.send_message(
+        msg.chat.id,
+        config
+            .metro_api
+            .next_arrival_request(req)
+            .await
+            .map_or("error getting metro schedule data".to_string(), |resp| {
+                resp.to_string()
+            }),
+    )
+    .await?;
+    Ok(())
+}
+
+async fn spending_reset_endpoint(bot: Bot, msg: Message, config: Config) -> HandlerResult {
+    bot.send_message(
+        msg.chat.id,
+        config
+            .spending_api
+            .spending_reset_request()
+            .await
+            .map_or("error calling spending api".to_string(), |resp| {
+                resp.to_string()
+            }),
+    )
+    .await?;
+    Ok(())
+}
+
+async fn spending_total_endpoint(bot: Bot, msg: Message, config: Config) -> HandlerResult {
+    bot.send_message(
+        msg.chat.id,
+        config
+            .spending_api
+            .spending_total_request()
+            .await
+            .map_or("error calling spending api".to_string(), |resp| {
+                resp.to_string()
+            }),
+    )
+    .await?;
+    Ok(())
+}
+
+async fn spending_endpoint(
+    bot: Bot,
+    msg: Message,
+    req: SpentRequest,
+    config: Config,
+) -> HandlerResult {
+    bot.send_message(
+        msg.chat.id,
+        config
+            .spending_api
+            .spending_request(req)
+            .await
+            .map_or("error calling spending api".to_string(), |resp| {
+                resp.to_string()
+            }),
+    )
+    .await?;
+    Ok(())
+}
+
+async fn budget_endpoint(
+    bot: Bot,
+    msg: Message,
+    req: SpentRequest,
+    config: Config,
+) -> HandlerResult {
+    bot.send_message(
+        msg.chat.id,
+        config
+            .spending_api
+            .budget_set_request(req)
+            .await
+            .map_or("error calling spending api".to_string(), |resp| {
+                resp.to_string()
+            }),
+    )
+    .await?;
     Ok(())
 }
 
 async fn commands_handler(bot: Bot, msg: Message, cmd: Command, config: Config) -> HandlerResult {
-    match cmd {
-        Command::Help => helpmsg(bot, msg).await,
-        Command::Thermostat => thermostat(bot, msg, config).await,
-        Command::News => get_news(bot, msg, config).await,
-        // Command::System => get_sysinfo(bot, msg, config).await,
-    }
+    bot.send_message(
+        msg.chat.id,
+        match cmd {
+            Command::Help => helpmsg(),
+            Command::Thermostat => thermostat(config).await,
+            Command::News => get_news(config).await,
+        },
+    )
+    .await?;
+    Ok(())
 }

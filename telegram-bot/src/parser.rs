@@ -1,16 +1,69 @@
 use metro_schedule::{Direction, NextArrivalRequest, Station};
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
-use nom::character::complete::space1;
-use nom::combinator::map_res;
-use nom::sequence::separated_pair;
+use nom::character::complete::{char, digit0, digit1, space0, space1};
+use nom::combinator::{map, map_res, opt, recognize};
+use nom::sequence::{pair, preceded, separated_pair};
 use nom::{Finish, IResult};
+use spending_tracker::{Category, SpentRequest};
 
-pub(crate) fn parse_metro_request(s: &str) -> Option<NextArrivalRequest> {
-    if let Ok((_, (direction, station))) = parse_station_and_direction(s).finish() {
-        return Some(NextArrivalRequest { station, direction });
-    }
-    None
+pub(crate) fn parse_metro_request(s: String) -> Option<NextArrivalRequest> {
+    parse_station_and_direction(s.as_str())
+        .finish()
+        .ok()
+        .map(|(_, (direction, station))| NextArrivalRequest { station, direction })
+}
+
+pub(crate) fn parse_spending_request(s: String) -> Option<SpentRequest> {
+    parse_amount_and_category(s.as_str())
+        .finish()
+        .ok()
+        .map(|(_, (amount, category))| SpentRequest { category, amount })
+}
+
+pub(crate) fn parse_budget_request(s: String) -> Option<SpentRequest> {
+    parse_budget_and_amount(s.as_str())
+        .finish()
+        .ok()
+        .map(|(_, amount)| SpentRequest {
+            amount,
+            category: None,
+        })
+}
+
+pub(crate) fn is_spending_total_request(s: String) -> bool {
+    parse_spending_total_request(s.as_str()).finish().is_ok()
+}
+
+pub(crate) fn is_spending_reset_request(s: String) -> bool {
+    parse_spending_reset_request(s.as_str()).finish().is_ok()
+}
+
+fn parse_spending_total_request(s: &str) -> IResult<&str, (&str, &str)> {
+    separated_pair(tag_no_case("spent"), space1, tag_no_case("total"))(s)
+}
+
+fn parse_spending_reset_request(s: &str) -> IResult<&str, (&str, &str)> {
+    separated_pair(tag_no_case("spent"), space1, tag_no_case("reset"))(s)
+}
+
+fn parse_amount_and_category(s: &str) -> IResult<&str, (f32, Option<Category>)> {
+    preceded(
+        tag_no_case("spent "),
+        separated_pair(parse_price, space0, opt(parse_category)),
+    )(s)
+}
+
+fn parse_budget_and_amount(s: &str) -> IResult<&str, f32> {
+    preceded(tag_no_case("budget "), parse_price)(s)
+}
+
+// d+.?d*
+fn parse_price(s: &str) -> IResult<&str, f32> {
+    map_res(
+        recognize(pair(digit1, pair(opt(char('.')), digit0))),
+        |n: &str| n.parse(),
+    )(s)
 }
 
 fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
@@ -80,4 +133,18 @@ fn parse_station(s: &str) -> IResult<&str, Station> {
         )),
         Station::try_from,
     )(s)
+}
+
+fn parse_category(s: &str) -> IResult<&str, Category> {
+    map(
+        alt((
+            tag_no_case("dining"),
+            tag_no_case("grocery"),
+            tag_no_case("merchandise"),
+            tag_no_case("travel"),
+            tag_no_case("entertainment"),
+            tag_no_case("other"),
+        )),
+        Category::from,
+    )(s) //anychar?
 }
