@@ -1,9 +1,9 @@
 // use sysinfo::SystemExt;
+use crate::config::Config;
 use crate::parser::{
     is_spending_reset_request, is_spending_total_request, parse_budget_request,
     parse_metro_request, parse_spending_request,
 };
-use crate::{Config, HandlerResult};
 use metro_schedule::NextArrivalRequest;
 use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
@@ -11,6 +11,8 @@ use teloxide::prelude::{Message, Requester, Update};
 use teloxide::types::Location;
 use teloxide::utils::command::BotCommands;
 use teloxide::{dptree, Bot};
+
+type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[derive(BotCommands, Clone)]
 #[command(
@@ -28,7 +30,7 @@ enum Command {
     // System,
 }
 
-pub(crate) fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
     Update::filter_message()
         .branch(Message::filter_location().endpoint(weather_req))
         .branch(

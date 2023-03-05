@@ -1,21 +1,5 @@
-extern crate core;
-
+use telegram_chatbot::{config::Config, dispatch::schema};
 use teloxide::prelude::*;
-
-mod config;
-mod dispatch;
-mod enviroplus;
-mod metro;
-mod news;
-mod openweather;
-mod parser;
-mod spending;
-// mod sysinfo;
-
-use crate::dispatch::schema;
-use config::Config;
-
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[tokio::main]
 async fn main() {

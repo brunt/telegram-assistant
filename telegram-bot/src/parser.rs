@@ -7,21 +7,21 @@ use nom::sequence::{pair, preceded, separated_pair};
 use nom::{Finish, IResult};
 use spending_tracker::{Category, SpentRequest};
 
-pub(crate) fn parse_metro_request(s: String) -> Option<NextArrivalRequest> {
+pub fn parse_metro_request(s: String) -> Option<NextArrivalRequest> {
     parse_station_and_direction(s.as_str())
         .finish()
         .ok()
         .map(|(_, (direction, station))| NextArrivalRequest { station, direction })
 }
 
-pub(crate) fn parse_spending_request(s: String) -> Option<SpentRequest> {
+pub fn parse_spending_request(s: String) -> Option<SpentRequest> {
     parse_amount_and_category(s.as_str())
         .finish()
         .ok()
         .map(|(_, (amount, category))| SpentRequest { category, amount })
 }
 
-pub(crate) fn parse_budget_request(s: String) -> Option<SpentRequest> {
+pub fn parse_budget_request(s: String) -> Option<SpentRequest> {
     parse_budget_and_amount(s.as_str())
         .finish()
         .ok()
@@ -31,11 +31,11 @@ pub(crate) fn parse_budget_request(s: String) -> Option<SpentRequest> {
         })
 }
 
-pub(crate) fn is_spending_total_request(s: String) -> bool {
+pub fn is_spending_total_request(s: String) -> bool {
     parse_spending_total_request(s.as_str()).finish().is_ok()
 }
 
-pub(crate) fn is_spending_reset_request(s: String) -> bool {
+pub fn is_spending_reset_request(s: String) -> bool {
     parse_spending_reset_request(s.as_str()).finish().is_ok()
 }
 
@@ -146,5 +146,5 @@ fn parse_category(s: &str) -> IResult<&str, Category> {
             tag_no_case("other"),
         )),
         Category::from,
-    )(s) //anychar?
+    )(s)
 }

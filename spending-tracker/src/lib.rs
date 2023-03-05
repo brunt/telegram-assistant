@@ -30,12 +30,12 @@ impl fmt::Display for Category {
 
 impl From<&str> for Category {
     fn from(s: &str) -> Self {
-        match s {
-            "Dining" | "dining" => Self::Dining,
-            "Travel" | "travel" => Self::Travel,
-            "Merchandise" | "merchandise" => Self::Merchandise,
-            "Entertainment" | "entertainment" => Self::Entertainment,
-            "Grocery" | "grocery" => Self::Grocery,
+        match s.to_lowercase().as_str() {
+            "dining" => Self::Dining,
+            "travel" => Self::Travel,
+            "merchandise" => Self::Merchandise,
+            "entertainment" => Self::Entertainment,
+            "grocery" => Self::Grocery,
             _ => Self::Other,
         }
     }

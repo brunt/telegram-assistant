@@ -10,7 +10,7 @@ use std::sync::Arc;
 // };
 
 #[derive(Debug, Clone)]
-pub(crate) struct Config {
+pub struct Config {
     pub(crate) spending_api: Arc<SpendingAPI>,
     pub(crate) metro_api: Arc<MetroScheduleAPI>,
     pub(crate) enviro_api: Arc<EnviroApi>,
@@ -20,7 +20,7 @@ pub(crate) struct Config {
 }
 
 impl Config {
-    pub(crate) fn from_env() -> Config {
+    pub fn from_env() -> Config {
         Self {
             spending_api: Arc::new(env::var("SPENDING_API_URL").map_or(
                 SpendingAPI::default(),
