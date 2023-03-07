@@ -1,31 +1,38 @@
 use metro_schedule::{Direction, NextArrivalRequest, Station};
-use nom::branch::alt;
-use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, digit0, digit1, space0, space1};
-use nom::combinator::{map, map_res, opt, recognize};
-use nom::sequence::{pair, preceded, separated_pair};
-use nom::{Finish, IResult};
+// use nom::branch::alt;
+use winnow::branch::alt;
+// use nom::bytes::complete::tag_no_case;
+use winnow::bytes::tag_no_case;
+// use nom::character::complete::{char, digit0, digit1, space0, space1};
+use winnow::character::{digit0, digit1, space0, space1};
+// use nom::combinator::{map, map_res, opt, recognize};
+use winnow::combinator::{map_res, opt, recognize};
+// use nom::sequence::{pair, preceded, separated_pair};
+use winnow::sequence::{preceded, separated_pair};
+// use nom::{Finish, IResult};
+use winnow::{FinishIResult, IResult, Parser};
+
 use spending_tracker::{Category, SpentRequest};
 
 pub fn parse_metro_request(s: String) -> Option<NextArrivalRequest> {
     parse_station_and_direction(s.as_str())
         .finish()
         .ok()
-        .map(|(_, (direction, station))| NextArrivalRequest { station, direction })
+        .map(|(direction, station)| NextArrivalRequest { station, direction })
 }
 
 pub fn parse_spending_request(s: String) -> Option<SpentRequest> {
     parse_amount_and_category(s.as_str())
         .finish()
         .ok()
-        .map(|(_, (amount, category))| SpentRequest { category, amount })
+        .map(|(amount, category)| SpentRequest { category, amount })
 }
 
 pub fn parse_budget_request(s: String) -> Option<SpentRequest> {
     parse_budget_and_amount(s.as_str())
         .finish()
         .ok()
-        .map(|(_, amount)| SpentRequest {
+        .map(|amount| SpentRequest {
             amount,
             category: None,
         })
@@ -60,10 +67,7 @@ fn parse_budget_and_amount(s: &str) -> IResult<&str, f32> {
 
 // d+.?d*
 fn parse_price(s: &str) -> IResult<&str, f32> {
-    map_res(
-        recognize(pair(digit1, pair(opt(char('.')), digit0))),
-        |n: &str| n.parse(),
-    )(s)
+    map_res(recognize((digit1, opt('.'), digit0)).map_res(), |n: &str| n.parse())(s).recognize()
 }
 
 fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
@@ -71,14 +75,10 @@ fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
 }
 
 fn parse_direction(s: &str) -> IResult<&str, Direction> {
-    map_res(
-        alt((tag_no_case("west"), tag_no_case("east"))),
-        Direction::try_from,
-    )(s)
+    alt((tag_no_case("west"), tag_no_case("east")))(s).map_res(Direction::try_from)
 }
 
 fn parse_station(s: &str) -> IResult<&str, Station> {
-    map_res(
         alt((
             tag_no_case("lambert"),
             tag_no_case("lambert2"),
@@ -130,21 +130,17 @@ fn parse_station(s: &str) -> IResult<&str, Station> {
                     tag_no_case("shiloh scott"),
                 )),
             )),
-        )),
-        Station::try_from,
-    )(s)
+        ))(s).map_res(Station::try_from)
 }
 
 fn parse_category(s: &str) -> IResult<&str, Category> {
-    map(
-        alt((
-            tag_no_case("dining"),
-            tag_no_case("grocery"),
-            tag_no_case("merchandise"),
-            tag_no_case("travel"),
-            tag_no_case("entertainment"),
-            tag_no_case("other"),
-        )),
-        Category::from,
-    )(s)
+    alt((
+        tag_no_case("dining"),
+        tag_no_case("grocery"),
+        tag_no_case("merchandise"),
+        tag_no_case("travel"),
+        tag_no_case("entertainment"),
+        tag_no_case("other"),
+    ))(s)
+    .map(Category::from)
 }

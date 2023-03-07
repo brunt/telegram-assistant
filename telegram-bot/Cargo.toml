@@ -18,7 +18,8 @@ tokio-stream = "0.1.11"
 #sysinfo = "0.27.0"
 spending-tracker = { package = "spending-tracker", path = "../spending-tracker" }
 metro-schedule = { package = "metro-schedule", path = "../metro-schedule" }
-nom = "7.1.3"
+#nom = "7.1.3"
+winnow = "0.3.4"
 
 [dev-dependencies]
 criterion = "0.4.0"
