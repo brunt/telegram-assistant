@@ -109,7 +109,7 @@ time: {}"#,
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Station {
     LambertT1,
     LambertT2,
@@ -196,55 +196,7 @@ impl Display for Station {
     }
 }
 
-impl TryFrom<&str> for Station {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "lambert" => Ok(Self::LambertT1),
-            "lambert2" => Ok(Self::LambertT2),
-            "hanley" => Ok(Self::NorthHanley),
-            "umsl north" | "umsl" => Ok(Self::UMSLNorth),
-            "umsl south" => Ok(Self::UMSLSouth),
-            "rock road" => Ok(Self::RockRoad),
-            "wellston" => Ok(Self::Wellston),
-            "delmar" => Ok(Self::DelmarLoop),
-            "shrewsbury" => Ok(Self::Shrewsbury),
-            "sunnen" => Ok(Self::Sunnen),
-            "maplewood" => Ok(Self::MaplewoodManchester),
-            "brentwood" => Ok(Self::Brentwood),
-            "richmond" => Ok(Self::RichmondHeights),
-            "clayton" => Ok(Self::Clayton),
-            "forsyth" => Ok(Self::Forsyth),
-            "ucity" => Ok(Self::UCity),
-            "skinker" => Ok(Self::Skinker),
-            "forest park" => Ok(Self::ForestPark),
-            "cwe" | "central west end" => Ok(Self::CWE),
-            "cortex" => Ok(Self::Cortex),
-            "grand" => Ok(Self::Grand),
-            "union" => Ok(Self::Union),
-            "civic" => Ok(Self::CivicCenter),
-            "stadium" => Ok(Self::Stadium),
-            "8th pine" | "8th and pine" => Ok(Self::EighthPine),
-            "convention" => Ok(Self::ConventionCenter),
-            "lacledes" | "lacledes landing" => Ok(Self::LacledesLanding),
-            "riverfront" => Ok(Self::EastRiverfront),
-            "5th missouri" | "fifth missouri" => Ok(Self::FifthMissouri),
-            "emerson" => Ok(Self::EmersonPark),
-            "jjk" | "jackie joiner" => Ok(Self::JJK),
-            "washington" => Ok(Self::Washington),
-            "fvh" => Ok(Self::FairviewHeights),
-            "memorial" | "memorial hospital" => Ok(Self::MemorialHospital),
-            "swansea" => Ok(Self::Swansea),
-            "belleville" => Ok(Self::Belleville),
-            "college" => Ok(Self::College),
-            "shiloh" | "shiloh scott" => Ok(Self::ShilohScott),
-            _ => Err(String::from("no station by that name")),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Direction {
     East,
     West,
@@ -255,18 +207,6 @@ impl Display for Direction {
         match self {
             Self::East => write!(f, "East"),
             Self::West => write!(f, "West"),
-        }
-    }
-}
-
-impl TryFrom<&str> for Direction {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "west" => Ok(Self::West),
-            "east" => Ok(Self::East),
-            _ => Err(String::from("neither")),
         }
     }
 }
