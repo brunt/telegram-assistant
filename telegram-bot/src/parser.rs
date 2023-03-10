@@ -155,10 +155,47 @@ mod test {
     }
 
     #[test]
-    fn test_parse_station() {
+    fn test_parse_station_and_direction() {
         assert_eq!(
             parse_station_and_direction("west cortex").unwrap(),
             ("", (Direction::West, Station::Cortex))
+        );
+
+        assert_eq!(
+            parse_station_and_direction("east nowhere").ok(),
+            None);
+    }
+
+
+    #[test]
+    fn test_parse_amount_and_category() {
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 dining").unwrap(),
+            ("", (24.78f32, Some(Category::Dining)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 grocery").unwrap(),
+            ("", (24.78f32, Some(Category::Grocery)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 merchandise").unwrap(),
+            ("", (24.78f32, Some(Category::Merchandise)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 travel").unwrap(),
+            ("", (24.78f32, Some(Category::Travel)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 entertainment").unwrap(),
+            ("", (24.78f32, Some(Category::Entertainment)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 other").unwrap(),
+            ("", (24.78f32, Some(Category::Other)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78").unwrap(),
+            ("", (24.78f32, None))
         );
     }
 }

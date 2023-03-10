@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Category {
     Dining,
     Grocery,
