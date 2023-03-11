@@ -1,31 +1,32 @@
 use metro_schedule::{Direction, NextArrivalRequest, Station};
-use nom::branch::alt;
-use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, digit0, digit1, space0, space1};
-use nom::combinator::{map, map_res, opt, recognize};
-use nom::sequence::{pair, preceded, separated_pair};
-use nom::{Finish, IResult};
+use winnow::branch::alt;
+use winnow::bytes::tag_no_case;
+use winnow::character::{digit0, digit1, space0, space1};
+use winnow::combinator::opt;
+use winnow::sequence::{preceded, separated_pair};
+use winnow::{FinishIResult, IResult, Parser};
+
 use spending_tracker::{Category, SpentRequest};
 
 pub fn parse_metro_request(s: String) -> Option<NextArrivalRequest> {
     parse_station_and_direction(s.as_str())
         .finish()
         .ok()
-        .map(|(_, (direction, station))| NextArrivalRequest { station, direction })
+        .map(|(direction, station)| NextArrivalRequest { station, direction })
 }
 
 pub fn parse_spending_request(s: String) -> Option<SpentRequest> {
     parse_amount_and_category(s.as_str())
         .finish()
         .ok()
-        .map(|(_, (amount, category))| SpentRequest { category, amount })
+        .map(|(amount, category)| SpentRequest { category, amount })
 }
 
 pub fn parse_budget_request(s: String) -> Option<SpentRequest> {
     parse_budget_and_amount(s.as_str())
         .finish()
         .ok()
-        .map(|(_, amount)| SpentRequest {
+        .map(|amount| SpentRequest {
             amount,
             category: None,
         })
@@ -60,10 +61,10 @@ fn parse_budget_and_amount(s: &str) -> IResult<&str, f32> {
 
 // d+.?d*
 fn parse_price(s: &str) -> IResult<&str, f32> {
-    map_res(
-        recognize(pair(digit1, pair(opt(char('.')), digit0))),
-        |n: &str| n.parse(),
-    )(s)
+    (digit1, opt('.'), digit0)
+        .recognize()
+        .map_res(|n: &str| n.parse())
+        .parse_next(s)
 }
 
 fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
@@ -71,80 +72,130 @@ fn parse_station_and_direction(s: &str) -> IResult<&str, (Direction, Station)> {
 }
 
 fn parse_direction(s: &str) -> IResult<&str, Direction> {
-    map_res(
-        alt((tag_no_case("west"), tag_no_case("east"))),
-        Direction::try_from,
-    )(s)
+    alt((
+        tag_no_case("west").value(Direction::West),
+        tag_no_case("east").value(Direction::East),
+    ))(s)
 }
 
 fn parse_station(s: &str) -> IResult<&str, Station> {
-    map_res(
+    alt((
+        tag_no_case("lambert").value(Station::LambertT1),
+        tag_no_case("lambert2").value(Station::LambertT2),
+        tag_no_case("hanley").value(Station::NorthHanley),
+        tag_no_case("umsl north").value(Station::UMSLNorth),
+        tag_no_case("umsl").value(Station::UMSLNorth),
+        tag_no_case("umsl south").value(Station::UMSLSouth),
+        tag_no_case("rock road").value(Station::RockRoad),
+        tag_no_case("wellston").value(Station::Wellston),
+        tag_no_case("delmar").value(Station::DelmarLoop),
+        tag_no_case("shrewsbury").value(Station::Shrewsbury),
+        tag_no_case("sunnen").value(Station::Sunnen),
+        tag_no_case("maplewood").value(Station::MaplewoodManchester),
+        tag_no_case("brentwood").value(Station::Brentwood),
+        tag_no_case("richmond").value(Station::RichmondHeights),
+        tag_no_case("clayton").value(Station::Clayton),
+        tag_no_case("forsyth").value(Station::Forsyth),
+        tag_no_case("ucity").value(Station::UCity),
+        tag_no_case("skinker").value(Station::Skinker),
+        tag_no_case("forest park").value(Station::ForestPark),
+        tag_no_case("cwe").value(Station::CWE),
         alt((
-            tag_no_case("lambert"),
-            tag_no_case("lambert2"),
-            tag_no_case("hanley"),
-            tag_no_case("umsl north"),
-            tag_no_case("umsl"),
-            tag_no_case("umsl south"),
-            tag_no_case("rock road"),
-            tag_no_case("wellston"),
-            tag_no_case("delmar"),
-            tag_no_case("shrewsbury"),
-            tag_no_case("sunnen"),
-            tag_no_case("maplewood"),
-            tag_no_case("brentwood"),
-            tag_no_case("richmond"),
-            tag_no_case("clayton"),
-            tag_no_case("forsyth"),
-            tag_no_case("ucity"),
-            tag_no_case("skinker"),
-            tag_no_case("forest park"),
-            tag_no_case("cwe"),
+            tag_no_case("central west end").value(Station::CWE),
+            tag_no_case("cortex").value(Station::Cortex),
+            tag_no_case("grand").value(Station::Grand),
+            tag_no_case("union").value(Station::Union),
+            tag_no_case("civic").value(Station::CivicCenter),
+            tag_no_case("stadium").value(Station::Stadium),
+            tag_no_case("8th pine").value(Station::EighthPine),
+            tag_no_case("8th and pine").value(Station::EighthPine),
+            tag_no_case("convention").value(Station::ConventionCenter),
+            tag_no_case("lacledes").value(Station::LacledesLanding),
+            tag_no_case("lacledes landing").value(Station::LacledesLanding),
+            tag_no_case("riverfront").value(Station::EastRiverfront),
+            tag_no_case("5th missouri").value(Station::FifthMissouri),
+            tag_no_case("fifth missouri").value(Station::FifthMissouri),
+            tag_no_case("emerson").value(Station::EmersonPark),
+            tag_no_case("jjk").value(Station::JJK),
+            tag_no_case("jackie joiner").value(Station::JJK),
+            tag_no_case("washington").value(Station::Washington),
+            tag_no_case("fvh").value(Station::FairviewHeights),
             alt((
-                tag_no_case("central west end"),
-                tag_no_case("cortex"),
-                tag_no_case("grand"),
-                tag_no_case("union"),
-                tag_no_case("civic"),
-                tag_no_case("stadium"),
-                tag_no_case("8th pine"),
-                tag_no_case("8th and pine"),
-                tag_no_case("convention"),
-                tag_no_case("lacledes"),
-                tag_no_case("lacledes landing"),
-                tag_no_case("riverfront"),
-                tag_no_case("5th missouri"),
-                tag_no_case("fifth missouri"),
-                tag_no_case("emerson"),
-                tag_no_case("jjk"),
-                tag_no_case("jackie joiner"),
-                tag_no_case("washington"),
-                tag_no_case("fvh"),
-                alt((
-                    tag_no_case("memorial"),
-                    tag_no_case("memorial hospital"),
-                    tag_no_case("swansea"),
-                    tag_no_case("belleville"),
-                    tag_no_case("college"),
-                    tag_no_case("shiloh"),
-                    tag_no_case("shiloh scott"),
-                )),
+                tag_no_case("memorial").value(Station::MemorialHospital),
+                tag_no_case("memorial hospital").value(Station::MemorialHospital),
+                tag_no_case("swansea").value(Station::Swansea),
+                tag_no_case("belleville").value(Station::Belleville),
+                tag_no_case("college").value(Station::College),
+                tag_no_case("shiloh").value(Station::ShilohScott),
+                tag_no_case("shiloh scott").value(Station::ShilohScott),
             )),
         )),
-        Station::try_from,
-    )(s)
+    ))
+    .parse_next(s)
 }
 
 fn parse_category(s: &str) -> IResult<&str, Category> {
-    map(
-        alt((
-            tag_no_case("dining"),
-            tag_no_case("grocery"),
-            tag_no_case("merchandise"),
-            tag_no_case("travel"),
-            tag_no_case("entertainment"),
-            tag_no_case("other"),
-        )),
-        Category::from,
-    )(s)
+    alt((
+        tag_no_case("dining").value(Category::Dining),
+        tag_no_case("grocery").value(Category::Grocery),
+        tag_no_case("merchandise").value(Category::Merchandise),
+        tag_no_case("travel").value(Category::Travel),
+        tag_no_case("entertainment").value(Category::Entertainment),
+        tag_no_case("other").value(Category::Other),
+    ))(s)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_price() {
+        assert_eq!(parse_price("1.57").unwrap(), ("", 1.57f32));
+    }
+
+    #[test]
+    fn test_parse_station_and_direction() {
+        assert_eq!(
+            parse_station_and_direction("west cortex").unwrap(),
+            ("", (Direction::West, Station::Cortex))
+        );
+
+        assert_eq!(
+            parse_station_and_direction("east nowhere").ok(),
+            None);
+    }
+
+
+    #[test]
+    fn test_parse_amount_and_category() {
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 dining").unwrap(),
+            ("", (24.78f32, Some(Category::Dining)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 grocery").unwrap(),
+            ("", (24.78f32, Some(Category::Grocery)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 merchandise").unwrap(),
+            ("", (24.78f32, Some(Category::Merchandise)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 travel").unwrap(),
+            ("", (24.78f32, Some(Category::Travel)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 entertainment").unwrap(),
+            ("", (24.78f32, Some(Category::Entertainment)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78 other").unwrap(),
+            ("", (24.78f32, Some(Category::Other)))
+        );
+        assert_eq!(
+            parse_amount_and_category("spent 24.78").unwrap(),
+            ("", (24.78f32, None))
+        );
+    }
 }

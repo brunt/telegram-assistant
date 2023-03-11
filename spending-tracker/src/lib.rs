@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Category {
     Dining,
     Grocery,
@@ -25,19 +25,6 @@ impl fmt::Display for Category {
                 Self::Other => "Other",
             }
         )
-    }
-}
-
-impl From<&str> for Category {
-    fn from(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "dining" => Self::Dining,
-            "travel" => Self::Travel,
-            "merchandise" => Self::Merchandise,
-            "entertainment" => Self::Entertainment,
-            "grocery" => Self::Grocery,
-            _ => Self::Other,
-        }
     }
 }
 
