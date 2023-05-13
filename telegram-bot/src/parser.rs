@@ -80,12 +80,12 @@ fn parse_direction(s: &str) -> IResult<&str, Direction> {
 
 fn parse_station(s: &str) -> IResult<&str, Station> {
     alt((
-        tag_no_case("lambert").value(Station::LambertT1),
         tag_no_case("lambert2").value(Station::LambertT2),
+        tag_no_case("lambert").value(Station::LambertT1),
         tag_no_case("hanley").value(Station::NorthHanley),
         tag_no_case("umsl north").value(Station::UMSLNorth),
-        tag_no_case("umsl").value(Station::UMSLNorth),
         tag_no_case("umsl south").value(Station::UMSLSouth),
+        tag_no_case("umsl").value(Station::UMSLNorth),
         tag_no_case("rock road").value(Station::RockRoad),
         tag_no_case("wellston").value(Station::Wellston),
         tag_no_case("delmar").value(Station::DelmarLoop),
@@ -161,11 +161,13 @@ mod test {
             ("", (Direction::West, Station::Cortex))
         );
 
-        assert_eq!(
-            parse_station_and_direction("east nowhere").ok(),
-            None);
-    }
+        assert_eq!(parse_station_and_direction("east nowhere").ok(), None);
 
+        assert_eq!(
+            parse_station_and_direction("east lambert2").unwrap(),
+            ("", (Direction::East, Station::LambertT2))
+        );
+    }
 
     #[test]
     fn test_parse_amount_and_category() {
