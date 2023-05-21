@@ -15,5 +15,5 @@ rust-embed = "6.4.2"
 mime_guess = "2"
 rusty-money = "0.4"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.3", features = ["cors"] }
+tower-http = { version = "0.4.0", features = ["cors"] }
 
