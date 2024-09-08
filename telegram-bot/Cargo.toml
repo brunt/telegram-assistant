@@ -20,7 +20,7 @@ metro-schedule = { package = "metro-schedule", path = "../metro-schedule" }
 winnow = "0.3.5"
 
 [dev-dependencies]
-criterion = "0.4.0"
+criterion = "0.5.1"
 
 [[bench]]
 name = "parser_benchmark"

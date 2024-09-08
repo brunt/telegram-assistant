@@ -14,7 +14,6 @@ use csv::Reader;
 use metro_schedule::{
     Direction, NextArrivalRequest, NextArrivalResponse, Station, StationTimeSlice,
 };
-use std::net::SocketAddr;
 
 #[derive(RustEmbed)]
 #[folder = "data/"]
@@ -25,16 +24,11 @@ async fn main() {
     let cmd = command!()
         .arg(arg!( -p --port [port] "port number for webserver").required(false))
         .get_matches();
-    let port = cmd.get_one::<String>("port");
+    let default_port = "8000".to_string();
+    let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
     let app = Router::new().route("/next-arrival", post(next_arrival));
-    let addr = SocketAddr::from((
-        [0, 0, 0, 0],
-        port.map_or(8000, |p| p.parse().unwrap_or(8000)),
-    ));
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("port already in use?");
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.expect("Failed to bind listener. Port already in use?");
+    axum::serve(listener, app).await.expect("Failed to start webserver. Port already in use?");
 }
 
 async fn next_arrival(Json(req): Json<NextArrivalRequest>) -> Response {
