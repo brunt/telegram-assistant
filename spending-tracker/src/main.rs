@@ -1,4 +1,3 @@
-use axum::body::{boxed, Full};
 use axum::http::{header, HeaderValue, Uri};
 use axum::response::Html;
 use axum::{
@@ -13,7 +12,6 @@ use clap::{arg, command};
 use rust_embed::RustEmbed;
 use rusty_money::{iso, Money};
 use spending_tracker::{Category, SpentRequest, SpentResponse, SpentTotalResponse, Transaction};
-use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 use tower_http::cors::CorsLayer;
 
@@ -49,7 +47,10 @@ async fn main() {
     let cmd = command!()
         .arg(arg!( -p --port [port] "port number for webserver").required(false))
         .get_matches();
-    let port = cmd.get_one::<String>("port");
+
+    let default_port = "8001".to_string();
+    let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
+
     let state = AppState::new();
     let app = Router::new()
         .route("/budget", post(set_budget))
@@ -60,7 +61,7 @@ async fn main() {
         .layer(
             CorsLayer::new()
                 .allow_origin(
-                    format!("http://localhost:{}", port.unwrap_or(&"8001".to_string()))
+                    format!("http://localhost:{port}")
                         .parse::<HeaderValue>()
                         .unwrap(),
                 )
@@ -69,15 +70,12 @@ async fn main() {
         .fallback_service(get(not_found))
         .with_state(state);
 
-    let addr = SocketAddr::from((
-        [0, 0, 0, 0],
-        port.map_or(8001, |p| p.parse().unwrap_or(8001)),
-    ));
-
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}"))
         .await
-        .expect("port already in use?");
+        .expect("Failed to bind listener. Port already in use?");
+    axum::serve(listener, app)
+        .await
+        .expect("Failed to start webserver. Port already in use?");
 }
 
 async fn spent(State(state): State<AppState<'_>>, Json(req): Json<SpentRequest>) -> Response {
@@ -171,17 +169,10 @@ where
 
         match Asset::get(path.as_str()) {
             Some(content) => {
-                let body = boxed(Full::from(content.data));
                 let mime = mime_guess::from_path(path).first_or_octet_stream();
-                Response::builder()
-                    .header(header::CONTENT_TYPE, mime.as_ref())
-                    .body(body)
-                    .unwrap()
+                ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
             }
-            None => Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(boxed(Full::from("404")))
-                .unwrap(),
+            None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
         }
     }
 }

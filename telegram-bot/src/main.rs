@@ -3,7 +3,7 @@ use teloxide::prelude::*;
 
 #[tokio::main]
 async fn main() {
-    //TODO: replace actix with axum, re-add prometheus metrics
+    //TODO: re-add prometheus metrics
     let config = Config::from_env();
     // run_webserver(&config, prometheus);
     run_chatbot(config).await;
