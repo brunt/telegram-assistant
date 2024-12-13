@@ -18,9 +18,9 @@ pub struct NextArrivalResponse {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct StationTimeSlice {
-    #[serde(rename = "Lambert Airport Terminal # 1")]
+    #[serde(rename = "Lambert Airport Trmnl #1 Station")]
     pub lambert_t1: Option<String>,
-    #[serde(rename = "Lambert Airport Terminal # 2")]
+    #[serde(rename = "Lambert Airport Trmnl #2 Station")]
     pub lambert_t2: Option<String>,
     #[serde(rename = "North Hanley Station")]
     pub north_hanley: Option<String>,
@@ -66,7 +66,7 @@ pub struct StationTimeSlice {
     pub civic_center: Option<String>,
     #[serde(rename = "Stadium Station")]
     pub stadium: Option<String>,
-    #[serde(rename = "8th & Pine Station")]
+    #[serde(rename = "8th & Pine (Temporarily Closed)")]
     pub eight_pine: Option<String>,
     #[serde(rename = "Convention Center Station")]
     pub convention_center: Option<String>,

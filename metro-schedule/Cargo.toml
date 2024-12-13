@@ -1,6 +1,6 @@
 [package]
 name = "metro-schedule"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Bryant Deters <bryantdeters@gmail.com"]
 edition = "2021"
 
@@ -14,5 +14,4 @@ serde_json = "1.0"
 chrono = "0.4.23"
 csv = "1"
 rust-embed = "8.5.0"
-nom = "7.1.1"
 tokio = { version = "1", features = ["full"] }

@@ -60,7 +60,8 @@ async fn main() {
         .route("/", get(index))
         .layer(
             CorsLayer::new()
-                .allow_origin(format!("http://localhost:{port}")
+                .allow_origin(
+                    format!("http://localhost:{port}")
                         .parse::<HeaderValue>()
                         .unwrap(),
                 )
@@ -69,8 +70,12 @@ async fn main() {
         .fallback_service(get(not_found))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await.expect("Failed to bind listener. Port already in use?");
-    axum::serve(listener, app).await.expect("Failed to start webserver. Port already in use?");
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}"))
+        .await
+        .expect("Failed to bind listener. Port already in use?");
+    axum::serve(listener, app)
+        .await
+        .expect("Failed to start webserver. Port already in use?");
 }
 
 async fn spent(State(state): State<AppState<'_>>, Json(req): Json<SpentRequest>) -> Response {
