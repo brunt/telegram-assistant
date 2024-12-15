@@ -2,6 +2,7 @@
 members = [
     "spending-tracker",
     "metro-schedule",
+    "notification-service",
     "telegram-bot",
 ]
 resolver = "2"
