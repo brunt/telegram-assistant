@@ -63,8 +63,10 @@ pub struct NotificationsResponse(pub Vec<Notification>);
 
 impl Display for NotificationsResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        Ok(for noti in self.0.iter().rev() {
-            write!(f, "• {}\n", noti)?;
-        })
+        writeln!(f, "Notifications")?;
+        for noti in self.0.iter().rev() {
+            writeln!(f, "• {}", noti)?;
+        }
+        Ok(())
     }
 }
