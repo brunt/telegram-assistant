@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use telegram_chatbot::{config::Config, dispatch::schema};
 use teloxide::prelude::*;
 
@@ -20,7 +21,7 @@ async fn run_chatbot(config: Config) {
     let bot = Bot::from_env();
 
     Dispatcher::builder(bot, schema())
-        .dependencies(dptree::deps![config])
+        .dependencies(dptree::deps![Arc::new(config)])
         .build()
         .dispatch()
         .await;

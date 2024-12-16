@@ -1,3 +1,4 @@
+use std::sync::Arc;
 // use sysinfo::SystemExt;
 use crate::config::Config;
 use crate::parser::{
@@ -7,12 +8,38 @@ use crate::parser::{
 use metro_schedule::NextArrivalRequest;
 use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
-use teloxide::prelude::{Message, Requester, Update};
+use teloxide::prelude::{ChatId, Message, Requester, Update};
 use teloxide::types::Location;
 use teloxide::utils::command::BotCommands;
 use teloxide::{dptree, Bot};
 
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+pub trait RequesterWithNotifications: Requester {
+    fn send_with_notification(
+        &self,
+        chat_id: ChatId,
+        text: String,
+        has_notifications: bool,
+    ) -> <Self as Requester>::SendMessage;
+}
+
+impl<R: Requester> RequesterWithNotifications for R {
+    fn send_with_notification(
+        &self,
+        chat_id: ChatId,
+        text: String,
+        has_notifications: bool,
+    ) -> <Self as Requester>::SendMessage {
+        let response_text = if has_notifications {
+            format!("{}\n\n✉️ Notifications available", text)
+        } else {
+            text
+        };
+
+        self.send_message(chat_id, response_text)
+    }
+}
 
 #[derive(BotCommands, Clone)]
 #[command(
@@ -26,6 +53,10 @@ enum Command {
     Thermostat,
     #[command(description = "Get some recent news")]
     News,
+    #[command(description = "View notifications")]
+    Notifications,
+    #[command(description = "Clear notifications")]
+    ClearNotifications,
     // #[command(description = "Get hardware system info for this bot")]
     // System,
 }
@@ -69,7 +100,7 @@ fn helpmsg() -> String {
     Command::descriptions().to_string()
 }
 
-async fn thermostat(config: Config) -> String {
+async fn thermostat(config: Arc<Config>) -> String {
     config
         .enviro_api
         .request_data()
@@ -79,8 +110,13 @@ async fn thermostat(config: Config) -> String {
         })
 }
 
-async fn weather_req(bot: Bot, msg: Message, location: Location, config: Config) -> HandlerResult {
-    bot.send_message(
+async fn weather_req(
+    bot: Bot,
+    msg: Message,
+    location: Location,
+    config: Arc<Config>,
+) -> HandlerResult {
+    bot.send_with_notification(
         msg.chat.id,
         config
             .openweather
@@ -89,12 +125,17 @@ async fn weather_req(bot: Bot, msg: Message, location: Location, config: Config)
             .map_or("error getting openweather data".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
 }
 
-async fn get_news(config: Config) -> String {
+async fn get_news(config: Arc<Config>) -> String {
     config
         .news_api
         .request_data()
@@ -118,9 +159,9 @@ async fn metro_endpoint(
     bot: Bot,
     msg: Message,
     req: NextArrivalRequest,
-    config: Config,
+    config: Arc<Config>,
 ) -> HandlerResult {
-    bot.send_message(
+    bot.send_with_notification(
         msg.chat.id,
         config
             .metro_api
@@ -129,13 +170,18 @@ async fn metro_endpoint(
             .map_or("error getting metro schedule data".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
 }
 
-async fn spending_reset_endpoint(bot: Bot, msg: Message, config: Config) -> HandlerResult {
-    bot.send_message(
+async fn spending_reset_endpoint(bot: Bot, msg: Message, config: Arc<Config>) -> HandlerResult {
+    bot.send_with_notification(
         msg.chat.id,
         config
             .spending_api
@@ -144,13 +190,18 @@ async fn spending_reset_endpoint(bot: Bot, msg: Message, config: Config) -> Hand
             .map_or("error calling spending api".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
 }
 
-async fn spending_total_endpoint(bot: Bot, msg: Message, config: Config) -> HandlerResult {
-    bot.send_message(
+async fn spending_total_endpoint(bot: Bot, msg: Message, config: Arc<Config>) -> HandlerResult {
+    bot.send_with_notification(
         msg.chat.id,
         config
             .spending_api
@@ -159,6 +210,11 @@ async fn spending_total_endpoint(bot: Bot, msg: Message, config: Config) -> Hand
             .map_or("error calling spending api".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
@@ -168,9 +224,9 @@ async fn spending_endpoint(
     bot: Bot,
     msg: Message,
     req: SpentRequest,
-    config: Config,
+    config: Arc<Config>,
 ) -> HandlerResult {
-    bot.send_message(
+    bot.send_with_notification(
         msg.chat.id,
         config
             .spending_api
@@ -179,6 +235,11 @@ async fn spending_endpoint(
             .map_or("error calling spending api".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
@@ -188,9 +249,9 @@ async fn budget_endpoint(
     bot: Bot,
     msg: Message,
     req: SpentRequest,
-    config: Config,
+    config: Arc<Config>,
 ) -> HandlerResult {
-    bot.send_message(
+    bot.send_with_notification(
         msg.chat.id,
         config
             .spending_api
@@ -199,19 +260,51 @@ async fn budget_endpoint(
             .map_or("error calling spending api".to_string(), |resp| {
                 resp.to_string()
             }),
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())
 }
 
-async fn commands_handler(bot: Bot, msg: Message, cmd: Command, config: Config) -> HandlerResult {
-    bot.send_message(
+async fn get_notifications(config: Arc<Config>) -> String {
+    config
+        .notification_service
+        .read_notifications()
+        .await
+        .unwrap_or("error retrieving notifications".to_string())
+}
+
+async fn clear_notifications(config: Arc<Config>) -> String {
+    match config.notification_service.clear_notifications().await {
+        Ok(()) => "Notifications have been cleared.".to_string(),
+        Err(e) => e.to_string(),
+    }
+}
+
+async fn commands_handler(
+    bot: Bot,
+    msg: Message,
+    cmd: Command,
+    config: Arc<Config>,
+) -> HandlerResult {
+    bot.send_with_notification(
         msg.chat.id,
         match cmd {
             Command::Help => helpmsg(),
-            Command::Thermostat => thermostat(config).await,
-            Command::News => get_news(config).await,
+            Command::Thermostat => thermostat(config.clone()).await,
+            Command::News => get_news(config.clone()).await,
+            Command::Notifications => get_notifications(config.clone()).await,
+            Command::ClearNotifications => clear_notifications(config.clone()).await,
         },
+        config
+            .notification_service
+            .has_notifications()
+            .await
+            .unwrap_or(false),
     )
     .await?;
     Ok(())

@@ -1,0 +1,12 @@
+[package]
+name = "notification-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7"
+chrono = "0.4.39"
+serde = { version = "1.0.216", features = ["derive"] }
+tokio = "1.42.0"
+uuid = { version = "1.11.0", features = ["v4"] }
+clap = {version = "4.5.23", features = ["cargo"]}

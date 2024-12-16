@@ -1,6 +1,7 @@
 use crate::enviroplus::EnviroApi;
 use crate::metro::MetroScheduleAPI;
 use crate::news::NewsAPI;
+use crate::notifications::NotificationService;
 use crate::openweather::OpenWeatherApi;
 use crate::spending::SpendingAPI;
 use std::env;
@@ -16,6 +17,7 @@ pub struct Config {
     pub(crate) enviro_api: Arc<EnviroApi>,
     pub(crate) openweather: Arc<OpenWeatherApi>,
     pub(crate) news_api: Arc<NewsAPI>,
+    pub(crate) notification_service: Arc<NotificationService>,
     // pub(crate) sysinfo: System,
 }
 
@@ -43,6 +45,7 @@ impl Config {
             // ),
             openweather: Arc::new(OpenWeatherApi::default()),
             news_api: Arc::new(NewsAPI::default()),
+            notification_service: Arc::new(NotificationService::default()),
             // sysinfo: System::new_with_specifics(
             //     RefreshKind::new()
             //         .with_memory()
