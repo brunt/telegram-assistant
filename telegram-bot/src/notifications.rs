@@ -10,14 +10,13 @@ impl Default for NotificationService {
     fn default() -> Self {
         let base_url = "http://localhost:8002";
         Self {
-            url: format!("{base_url}/notifications"),
-            unread_url: format!("{base_url}/unread"),
+            url: format!("{base_url}/notifications").into(),
+            unread_url: format!("{base_url}/unread").into(),
         }
     }
 }
 
 impl NotificationService {
-    #[allow(dead_code)] //SOON
     pub(crate) async fn write_notification(&self, payload: String) -> Result<(), reqwest::Error> {
         let client = reqwest::Client::new();
         client.post(&self.url).body(payload).send().await?;
