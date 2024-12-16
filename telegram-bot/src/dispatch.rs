@@ -9,10 +9,9 @@ use metro_schedule::NextArrivalRequest;
 use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
 use teloxide::prelude::{ChatId, Message, Requester, Update};
-use teloxide::types::{Location, ParseMode};
+use teloxide::types::Location;
 use teloxide::utils::command::BotCommands;
 use teloxide::{dptree, Bot};
-use teloxide::payloads::SendMessageSetters;
 
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
@@ -42,7 +41,6 @@ impl<R: Requester> RequesterWithNotifications for R {
     }
 }
 
-
 #[derive(BotCommands, Clone)]
 #[command(
     rename_rule = "lowercase",
@@ -62,7 +60,6 @@ enum Command {
     // #[command(description = "Get hardware system info for this bot")]
     // System,
 }
-
 
 pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
     Update::filter_message()
