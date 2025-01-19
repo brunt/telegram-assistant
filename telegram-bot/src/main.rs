@@ -1,11 +1,13 @@
 use std::sync::Arc;
-use telegram_chatbot::{config::Config, dispatch::schema};
+use telegram_chatbot::{config::Config, dispatch::monitor_thermostat, dispatch::schema};
 use teloxide::prelude::*;
 
 #[tokio::main]
 async fn main() {
     //TODO: re-add prometheus metrics
-    let config = Config::from_env();
+    let config = Arc::new(Config::from_env());
+    tokio::spawn(monitor_thermostat(config.clone()));
+
     // run_webserver(&config, prometheus);
     run_chatbot(config).await;
 }
@@ -17,11 +19,11 @@ async fn main() {
 //         .run();
 // }
 
-async fn run_chatbot(config: Config) {
+async fn run_chatbot(config: Arc<Config>) {
     let bot = Bot::from_env();
 
     Dispatcher::builder(bot, schema())
-        .dependencies(dptree::deps![Arc::new(config)])
+        .dependencies(dptree::deps![config])
         .build()
         .dispatch()
         .await;

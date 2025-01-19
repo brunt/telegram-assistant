@@ -6,6 +6,7 @@ use crate::parser::{
     parse_metro_request, parse_spending_request,
 };
 use metro_schedule::NextArrivalRequest;
+use simple_moving_average::{SumTreeSMA, SMA};
 use spending_tracker::SpentRequest;
 use teloxide::dispatching::{HandlerExt, MessageFilterExt, UpdateFilterExt, UpdateHandler};
 use teloxide::prelude::{ChatId, Message, Requester, Update};
@@ -98,6 +99,67 @@ pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'stat
 
 fn helpmsg() -> String {
     Command::descriptions().to_string()
+}
+
+const WINDOW_SIZE: usize = 48;
+pub async fn monitor_thermostat(config: Arc<Config>) {
+    const SLEEP_DURATION: u64 = 3600;
+
+    let mut sensors = vec![
+        (
+            "🟢Nitrogen Dioxide",
+            SumTreeSMA::<_, f32, WINDOW_SIZE>::new(),
+        ),
+        (
+            "🔴Carbon Monoxide",
+            SumTreeSMA::<_, f32, WINDOW_SIZE>::new(),
+        ),
+        ("🟡Ammonia", SumTreeSMA::<_, f32, WINDOW_SIZE>::new()),
+        ("🌡️Temperature", SumTreeSMA::<_, f32, WINDOW_SIZE>::new()),
+    ];
+
+    loop {
+        if let Ok(resp) = config.enviro_api.request_data().await {
+            let values = [
+                resp.gas.oxidising,
+                resp.gas.reducing,
+                resp.gas.nh3,
+                resp.temperature,
+            ];
+
+            for ((name, sensor), &value) in sensors.iter_mut().zip(values.iter()) {
+                sensor.add_sample(value);
+                check_and_notify(&config, name, sensor, value).await;
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(SLEEP_DURATION)).await;
+    }
+}
+
+async fn check_and_notify(
+    config: &Arc<Config>,
+    name: &str,
+    sensor: &SumTreeSMA<f32, f32, WINDOW_SIZE>,
+    value: f32,
+) {
+    let num_samples = sensor.get_sample_window_iter().count();
+    if num_samples == sensor.get_sample_window_size() {
+        let avg = sensor.get_average();
+        let std_dev = (sensor
+            .get_sample_window_iter()
+            .map(|n| (n - avg).powi(2))
+            .sum::<f32>()
+            / num_samples as f32)
+            .sqrt();
+
+        if (value - avg).abs() > std_dev {
+            let message = format!("{} anomaly: {}", name, value - avg);
+            let _ = config
+                .notification_service
+                .write_notification(message)
+                .await;
+        }
+    }
 }
 
 async fn thermostat(config: Arc<Config>) -> String {
