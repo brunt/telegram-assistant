@@ -34,8 +34,8 @@ pub(crate) struct EnviroResponse {
 pub(crate) struct GasData {
     pub(crate) adc: Option<f32>,
     pub(crate) nh3: f32,
-    pub(crate) oxidising: f32,
-    pub(crate) reducing: f32,
+    pub(crate) oxidising: f32, //nitrogen dioxide
+    pub(crate) reducing: f32,  // carbon monoxide
 }
 
 impl fmt::Display for EnviroResponse {

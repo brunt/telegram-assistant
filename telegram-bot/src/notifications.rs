@@ -17,7 +17,6 @@ impl Default for NotificationService {
 }
 
 impl NotificationService {
-    #[allow(dead_code)] //SOON
     pub(crate) async fn write_notification(&self, payload: String) -> Result<(), reqwest::Error> {
         let client = reqwest::Client::new();
         client.post(&self.url).body(payload).send().await?;
