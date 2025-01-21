@@ -152,7 +152,7 @@ async fn check_and_notify(
             / num_samples as f32)
             .sqrt();
 
-        if (value - avg).abs() > std_dev {
+        if (value - avg).abs() > (2.0 * std_dev) {
             let message = format!("{} anomaly: {}", name, value - avg);
             let _ = config
                 .notification_service

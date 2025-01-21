@@ -30,7 +30,7 @@ impl NotificationService {
             .json::<NotificationsResponse>()
             .await?;
 
-        Ok(format!("{}", res))
+        Ok(res.to_string())
     }
 
     pub(crate) async fn clear_notifications(&self) -> Result<(), reqwest::Error> {
