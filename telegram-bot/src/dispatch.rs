@@ -101,7 +101,7 @@ fn helpmsg() -> String {
     Command::descriptions().to_string()
 }
 
-const WINDOW_SIZE: usize = 48;
+const WINDOW_SIZE: usize = 168;
 pub async fn monitor_thermostat(config: Arc<Config>) {
     const SLEEP_DURATION: u64 = 3600;
 
@@ -151,7 +151,6 @@ async fn check_and_notify(
             .sum::<f32>()
             / num_samples as f32)
             .sqrt();
-
         if (value - avg).abs() > (2.0 * std_dev) {
             let message = format!("{} anomaly: {}", name, value - avg);
             let _ = config

@@ -36,7 +36,7 @@ impl Display for Notification {
             .created_at
             .parse::<DateTime<Local>>()
             .map_err(|_| std::fmt::Error)?;
-        write!(f, "{}\n{}", self.message, local_time)
+        write!(f, "{}\n{}", self.message, local_time.format("%m-%d %H:%M"))
     }
 }
 
