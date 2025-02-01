@@ -2,7 +2,7 @@ use metro_schedule::{Direction, NextArrivalRequest, Station};
 use winnow::ascii::{digit0, digit1, space0, space1, Caseless};
 use winnow::combinator::{alt, opt, preceded, separated_pair};
 use winnow::token::literal;
-use winnow::{PResult, Parser};
+use winnow::{Result, Parser};
 
 use spending_tracker::{Category, SpentRequest};
 
@@ -35,7 +35,7 @@ pub fn is_spending_reset_request(s: String) -> bool {
     parse_spending_reset_request(&mut s.as_str()).is_ok()
 }
 
-fn parse_spending_total_request<'s>(s: &mut &'s str) -> PResult<(&'s str, &'s str)> {
+fn parse_spending_total_request<'s>(s: &mut &'s str) -> Result<(&'s str, &'s str)> {
     separated_pair(
         literal(Caseless("spent")),
         space1,
@@ -44,7 +44,7 @@ fn parse_spending_total_request<'s>(s: &mut &'s str) -> PResult<(&'s str, &'s st
     .parse_next(s)
 }
 
-fn parse_spending_reset_request<'s>(s: &mut &'s str) -> PResult<(&'s str, &'s str)> {
+fn parse_spending_reset_request<'s>(s: &mut &'s str) -> Result<(&'s str, &'s str)> {
     (separated_pair(
         literal(Caseless("spent")),
         space1,
@@ -53,7 +53,7 @@ fn parse_spending_reset_request<'s>(s: &mut &'s str) -> PResult<(&'s str, &'s st
     .parse_next(s)
 }
 
-fn parse_amount_and_category(s: &mut &str) -> PResult<(f32, Option<Category>)> {
+fn parse_amount_and_category(s: &mut &str) -> Result<(f32, Option<Category>)> {
     preceded(
         literal(Caseless("spent ")),
         separated_pair(parse_price, space0, opt(parse_category)),
@@ -61,23 +61,23 @@ fn parse_amount_and_category(s: &mut &str) -> PResult<(f32, Option<Category>)> {
     .parse_next(s)
 }
 
-fn parse_budget_and_amount(s: &mut &str) -> PResult<f32> {
+fn parse_budget_and_amount(s: &mut &str) -> Result<f32> {
     preceded(literal(Caseless("budget ")), parse_price).parse_next(s)
 }
 
 // d+.?d*
-fn parse_price(s: &mut &str) -> PResult<f32> {
+fn parse_price(s: &mut &str) -> Result<f32> {
     (digit1, opt('.'), digit0)
         .take()
         .try_map(|n: &str| n.parse())
         .parse_next(s)
 }
 
-fn parse_station_and_direction(s: &mut &str) -> PResult<(Direction, Station)> {
+fn parse_station_and_direction(s: &mut &str) -> Result<(Direction, Station)> {
     separated_pair(parse_direction, space1, parse_station).parse_next(s)
 }
 
-fn parse_direction(s: &mut &str) -> PResult<Direction> {
+fn parse_direction(s: &mut &str) -> Result<Direction> {
     alt((
         literal(Caseless("west")).value(Direction::West),
         literal(Caseless("east")).value(Direction::East),
@@ -85,7 +85,7 @@ fn parse_direction(s: &mut &str) -> PResult<Direction> {
     .parse_next(s)
 }
 
-fn parse_station(s: &mut &str) -> PResult<Station> {
+fn parse_station(s: &mut &str) -> Result<Station> {
     alt((
         literal(Caseless("lambert2")).value(Station::LambertT2),
         literal(Caseless("lambert")).value(Station::LambertT1),
@@ -143,7 +143,7 @@ fn parse_station(s: &mut &str) -> PResult<Station> {
     .parse_next(s)
 }
 
-fn parse_category(s: &mut &str) -> PResult<Category> {
+fn parse_category(s: &mut &str) -> Result<Category> {
     alt((
         literal(Caseless("dining")).value(Category::Dining),
         literal(Caseless("grocery")).value(Category::Grocery),

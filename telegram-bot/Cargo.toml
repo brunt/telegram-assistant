@@ -19,7 +19,7 @@ tokio-stream = "0.1.17"
 spending-tracker = { package = "spending-tracker", path = "../spending-tracker" }
 metro-schedule = { package = "metro-schedule", path = "../metro-schedule" }
 notification-service = { package = "notification-service", path = "../notification-service" }
-winnow = "0.6.20"
+winnow = "0.7"
 
 [dev-dependencies]
 criterion = "0.5.1"
