@@ -3,11 +3,11 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
+use circular_buffer::CircularBuffer;
 use clap::{arg, command};
 use notification_service::Notification;
 use notification_service::NotificationsResponse;
 use std::sync::{Arc, RwLock};
-use circular_buffer::CircularBuffer;
 
 #[derive(Clone)]
 struct AppState {
@@ -44,7 +44,6 @@ async fn get_notifications(State(state): State<Arc<AppState>>) -> Json<Notificat
         .cloned()
         .collect::<Vec<_>>();
 
-
     *state
         .has_unread
         .write()
@@ -72,7 +71,7 @@ async fn clear_notifications(State(state): State<Arc<AppState>>) -> Json<Vec<Not
             .expect("failed to read notifications after clearing them")
             .iter()
             .cloned()
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>(),
     )
 }
 
@@ -89,10 +88,11 @@ async fn main() {
     let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
 
     let state = Arc::new(AppState {
-        notifications: Arc::new(RwLock::new(CircularBuffer::<20, Notification>::from([Notification::default()]))),
+        notifications: Arc::new(RwLock::new(CircularBuffer::<20, Notification>::from([
+            Notification::default(),
+        ]))),
         has_unread: Arc::new(RwLock::new(true)),
     });
-
 
     let app = Router::new()
         .route("/notifications", post(create_notification))

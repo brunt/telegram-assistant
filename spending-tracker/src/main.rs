@@ -56,7 +56,7 @@ async fn main() {
         .route("/budget", post(set_budget))
         .route("/spent", post(spent).get(spent_total))
         .route("/reset", get(reset))
-        .route("/dist/*file", get(static_handler))
+        .route("/dist/{*file}", get(static_handler))
         .route("/", get(index))
         .layer(
             CorsLayer::new()

@@ -2,7 +2,7 @@ use metro_schedule::{Direction, NextArrivalRequest, Station};
 use winnow::ascii::{digit0, digit1, space0, space1, Caseless};
 use winnow::combinator::{alt, opt, preceded, separated_pair};
 use winnow::token::literal;
-use winnow::{Result, Parser};
+use winnow::{Parser, Result};
 
 use spending_tracker::{Category, SpentRequest};
 
@@ -228,15 +228,15 @@ mod test {
     fn test_parse_spending_reset_request() {
         assert!(parse_spending_reset_request(&mut "spent reset").is_ok());
         assert!(parse_spending_reset_request(&mut "other string").is_err());
-        assert_eq!(is_spending_reset_request("spent reset".to_string()), true);
-        assert_eq!(is_spending_reset_request("other string".to_string()), false);
+        assert!(is_spending_reset_request("spent reset".to_string()));
+        assert!(!is_spending_reset_request("other string".to_string()));
     }
 
     #[test]
     fn test_parse_spending_total_request() {
         assert!(parse_spending_total_request(&mut "spent total").is_ok());
         assert!(parse_spending_total_request(&mut "other string").is_err());
-        assert_eq!(is_spending_total_request("spent total".to_string()), true);
-        assert_eq!(is_spending_total_request("other string".to_string()), false);
+        assert!(is_spending_total_request("spent total".to_string()));
+        assert!(!is_spending_total_request("other string".to_string()));
     }
 }
