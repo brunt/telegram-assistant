@@ -3,16 +3,15 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use chrono::{Duration, Utc};
 use clap::{arg, command};
 use notification_service::Notification;
 use notification_service::NotificationsResponse;
 use std::sync::{Arc, RwLock};
-use tokio::time::{interval, Duration as TokioDuration};
+use circular_buffer::CircularBuffer;
 
 #[derive(Clone)]
 struct AppState {
-    notifications: Arc<RwLock<Vec<Notification>>>,
+    notifications: Arc<RwLock<CircularBuffer<20, Notification>>>,
     has_unread: Arc<RwLock<bool>>,
 }
 
@@ -26,7 +25,7 @@ async fn create_notification(
         .notifications
         .write()
         .expect("failed to obtain write lock during create")
-        .push(notification.clone());
+        .push_back(notification.clone());
 
     *state
         .has_unread
@@ -41,7 +40,10 @@ async fn get_notifications(State(state): State<Arc<AppState>>) -> Json<Notificat
         .notifications
         .read()
         .expect("failed to obtain read lock when reading notifications")
-        .clone();
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>();
+
 
     *state
         .has_unread
@@ -49,19 +51,6 @@ async fn get_notifications(State(state): State<Arc<AppState>>) -> Json<Notificat
         .expect("failed to obtain write lock during read") = false;
 
     Json(NotificationsResponse(notifications))
-}
-
-async fn cleanup_old_notifications(state: Arc<AppState>) {
-    let mut interval = interval(TokioDuration::from_secs(3600)); // Run every hour
-    loop {
-        interval.tick().await;
-        let week_ago = Utc::now() - Duration::weeks(1);
-        state
-            .notifications
-            .write()
-            .expect("failed to write to get write lock during scheduled cleanup")
-            .retain(|n| n > &week_ago);
-    }
 }
 
 async fn clear_notifications(State(state): State<Arc<AppState>>) -> Json<Vec<Notification>> {
@@ -81,7 +70,9 @@ async fn clear_notifications(State(state): State<Arc<AppState>>) -> Json<Vec<Not
             .notifications
             .read()
             .expect("failed to read notifications after clearing them")
-            .clone(),
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>()
     )
 }
 
@@ -98,15 +89,10 @@ async fn main() {
     let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
 
     let state = Arc::new(AppState {
-        notifications: Arc::new(RwLock::new(vec![Notification::default()])),
+        notifications: Arc::new(RwLock::new(CircularBuffer::<20, Notification>::from([Notification::default()]))),
         has_unread: Arc::new(RwLock::new(true)),
     });
 
-    let cleanup_state = state.clone();
-
-    tokio::spawn(async move {
-        cleanup_old_notifications(cleanup_state).await;
-    });
 
     let app = Router::new()
         .route("/notifications", post(create_notification))
