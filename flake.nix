@@ -40,11 +40,7 @@
           CARGO_BUILD_TARGET = target;
           PKG_CONFIG_ALLOW_CROSS = "1";
           PKG_CONFIG_PATH = "${crossPkgs.openssl.dev}/lib/pkgconfig";
-          PKGCONFIGDIR = "${crossPkgs.openssl.dev}/lib/pkgconfig";
           OPENSSL_DIR = crossPkgs.openssl.dev;
-          OPENSSL_LIB_DIR = "${crossPkgs.openssl.out}/lib";
-          OPENSSL_INCLUDE_DIR = "${crossPkgs.openssl.dev}/include";
-          CMAKECONFIGDIR = "${pkgs.cmake.out}";
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${crossPkgs.stdenv.cc.targetPrefix}cc";
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_AR = "${crossPkgs.stdenv.cc.bintools}/bin/${crossPkgs.stdenv.cc.targetPrefix}ar";
           CARGO_TARGET_DIR= "/tmp/target";
