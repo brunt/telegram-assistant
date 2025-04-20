@@ -1,23 +1,16 @@
-#[macro_use]
-extern crate rust_embed;
-
-// use anyhow::{bail, Result};
+use axum::extract::State;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::post,
     Json, Router,
 };
-use chrono::{DateTime, Datelike, Local, Timelike, Weekday};
+use chrono::{DateTime, Local, Timelike};
 use clap::{arg, command};
 use csv::Reader;
 use metro_schedule::{
-    Direction, NextArrivalRequest, NextArrivalResponse, Station, StationTimeSlice,
+    NextArrivalRequest, NextArrivalResponse, Schedules, Station, StationTimeSlice,
 };
-
-#[derive(RustEmbed)]
-#[folder = "data/"]
-struct Asset;
 
 #[tokio::main]
 async fn main() {
@@ -26,7 +19,12 @@ async fn main() {
         .get_matches();
     let default_port = "8000".to_string();
     let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
-    let app = Router::new().route("/next-arrival", post(next_arrival));
+
+    let appstate = Schedules::new().await;
+
+    let app = Router::new()
+        .route("/next-arrival", post(next_arrival))
+        .with_state(appstate);
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}"))
         .await
         .expect("Failed to bind listener. Port already in use?");
@@ -35,39 +33,28 @@ async fn main() {
         .expect("Failed to start webserver. Port already in use?");
 }
 
-async fn next_arrival(Json(req): Json<NextArrivalRequest>) -> Response {
+async fn next_arrival(
+    State(state): State<Schedules>,
+    Json(req): Json<NextArrivalRequest>,
+) -> Response {
     let t = Local::now();
-    let filename = choose_file_for_request(t, &req.direction);
+    let schedule = state.choose_data_for_request(t, &req.direction);
 
-    if let Some(schedule) = Asset::get(&filename) {
-        return if let Some(s) = find_next_arrival(&schedule.data, &req.station, t) {
-            Json(NextArrivalResponse {
-                station: req.station,
-                direction: req.direction,
-                line: s.1,
-                time: s.0,
-            })
+    if let Some(s) = find_next_arrival(schedule.as_ref(), &req.station, t) {
+        Json(NextArrivalResponse {
+            station: req.station,
+            direction: req.direction,
+            line: s.1,
+            time: s.0,
+        })
+        .into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            "There are no arrival times for this station",
+        )
             .into_response()
-        } else {
-            (
-                StatusCode::NOT_FOUND,
-                "There are no arrival times for this station",
-            )
-                .into_response()
-        };
     }
-    StatusCode::INTERNAL_SERVER_ERROR.into_response()
-}
-
-fn choose_file_for_request(t: DateTime<Local>, direction: &Direction) -> String {
-    format!(
-        "{}bound-{}-schedule.csv",
-        direction.to_string().to_lowercase(),
-        match t.weekday() {
-            Weekday::Sat | Weekday::Sun => "weekends",
-            _ => "weekdays",
-        }
-    )
 }
 
 macro_rules! search_station {
@@ -212,7 +199,7 @@ fn find_next_arrival(
 
 fn schedule_time_is_later_than_now(t: DateTime<Local>, mut s: String) -> bool {
     let _ = s.pop(); //remove line type
-    let is_pm = s.pop().map_or(false, |c| c.to_string().eq("P"));
+    let is_pm = s.pop().is_some_and(|c| c.to_string().eq("P"));
     let x: Vec<&str> = s.split(':').collect();
     let hh: u32 = x[0].parse::<u32>().unwrap_or_default();
     t.le(&Local::now()

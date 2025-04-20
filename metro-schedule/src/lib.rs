@@ -1,3 +1,5 @@
+use chrono::{DateTime, Datelike, Local, Weekday};
+use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -207,6 +209,73 @@ impl Display for Direction {
         match self {
             Self::East => write!(f, "East"),
             Self::West => write!(f, "West"),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Schedules {
+    pub weekday_west: String,
+    pub weekday_east: String,
+    pub weekend_west: String,
+    pub weekend_east: String,
+}
+
+impl Schedules {
+    fn generate_schudle(direction: Direction, day_type: &str) -> String {
+        format!("https://www.metrostlouis.org/wp-admin/admin-ajax.php?action=metro_build_metrolink_html_table&direction={direction}&day_type={day_type}")
+    }
+    fn filter_content(junk: String) -> String {
+        let junk = junk
+            .replace("{\"type\":\"success\",\"html\":", "") //remove start and end lines
+            .replace("}", "")
+            .replace(r#"<\/thead>"#, "\n") //separate into rows and columns
+            .replace(r#"<\/tr>"#, "\n")
+            .replace(r#"<\/td>"#, ",")
+            .replace(r#"<\/th>"#, ",");
+        //remove the remaining html tags
+        let re = Regex::new(r#"<[\w|\s|\d|=|"|\-|\\|/]*>"#).unwrap();
+        let s = re.replace_all(&junk, "");
+        s.replace(" pm", "P")
+            .replace(" am", "A")
+            .replace("-", "")
+            .replace("\\t", "")
+            .replace("\\n", "")
+            .replace("\"", "")
+            .replace(",\n", "\n")
+            .replacen("\n", "", 1)
+    }
+
+    pub fn choose_data_for_request(&self, t: DateTime<Local>, direction: &Direction) -> String {
+        match (t.weekday(), direction) {
+            (Weekday::Sat, Direction::East) => self.weekend_east.clone(),
+            (Weekday::Sun, Direction::West) => self.weekend_west.clone(),
+            (_, Direction::East) => self.weekday_east.clone(),
+            (_, Direction::West) => self.weekday_west.clone(),
+        }
+    }
+    pub async fn new() -> Self {
+        let weekday_west_request =
+            reqwest::get(Self::generate_schudle(Direction::West, "weekdays"));
+        let weekday_east_request =
+            reqwest::get(Self::generate_schudle(Direction::East, "weekdays"));
+        let weekend_west_request =
+            reqwest::get(Self::generate_schudle(Direction::West, "weekends"));
+        let weekend_east_request =
+            reqwest::get(Self::generate_schudle(Direction::East, "weekends"));
+
+        let (weekday_west, weekday_east, weekend_west, weekend_east) = tokio::join!(
+            weekday_west_request,
+            weekday_east_request,
+            weekend_west_request,
+            weekend_east_request
+        );
+        //TODO: don't unwrap, maybe don't clone
+        Self {
+            weekday_west: Self::filter_content(weekday_west.unwrap().text().await.unwrap().clone()),
+            weekday_east: Self::filter_content(weekday_east.unwrap().text().await.unwrap().clone()),
+            weekend_west: Self::filter_content(weekend_west.unwrap().text().await.unwrap().clone()),
+            weekend_east: Self::filter_content(weekend_east.unwrap().text().await.unwrap().clone()),
         }
     }
 }
