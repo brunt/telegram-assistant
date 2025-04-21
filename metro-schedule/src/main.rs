@@ -20,7 +20,7 @@ async fn main() {
     let default_port = "8000".to_string();
     let port = cmd.get_one::<String>("port").unwrap_or(&default_port);
 
-    let appstate = Schedules::new().await;
+    let appstate = Schedules::new().await.expect("failed to retrieve schedule information");
 
     let app = Router::new()
         .route("/next-arrival", post(next_arrival))

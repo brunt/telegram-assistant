@@ -222,7 +222,7 @@ pub struct Schedules {
 }
 
 impl Schedules {
-    fn generate_schudle(direction: Direction, day_type: &str) -> String {
+    fn generate_schedule(direction: Direction, day_type: &str) -> String {
         format!("https://www.metrostlouis.org/wp-admin/admin-ajax.php?action=metro_build_metrolink_html_table&direction={direction}&day_type={day_type}")
     }
     fn filter_content(junk: String) -> String {
@@ -254,15 +254,15 @@ impl Schedules {
             (_, Direction::West) => self.weekday_west.clone(),
         }
     }
-    pub async fn new() -> Self {
+    pub async fn new() -> Result<Self, anyhow::Error> {
         let weekday_west_request =
-            reqwest::get(Self::generate_schudle(Direction::West, "weekdays"));
+            reqwest::get(Self::generate_schedule(Direction::West, "weekdays"));
         let weekday_east_request =
-            reqwest::get(Self::generate_schudle(Direction::East, "weekdays"));
+            reqwest::get(Self::generate_schedule(Direction::East, "weekdays"));
         let weekend_west_request =
-            reqwest::get(Self::generate_schudle(Direction::West, "weekends"));
+            reqwest::get(Self::generate_schedule(Direction::West, "weekends"));
         let weekend_east_request =
-            reqwest::get(Self::generate_schudle(Direction::East, "weekends"));
+            reqwest::get(Self::generate_schedule(Direction::East, "weekends"));
 
         let (weekday_west, weekday_east, weekend_west, weekend_east) = tokio::join!(
             weekday_west_request,
@@ -270,12 +270,12 @@ impl Schedules {
             weekend_west_request,
             weekend_east_request
         );
-        //TODO: don't unwrap, maybe don't clone
-        Self {
-            weekday_west: Self::filter_content(weekday_west.unwrap().text().await.unwrap().clone()),
-            weekday_east: Self::filter_content(weekday_east.unwrap().text().await.unwrap().clone()),
-            weekend_west: Self::filter_content(weekend_west.unwrap().text().await.unwrap().clone()),
-            weekend_east: Self::filter_content(weekend_east.unwrap().text().await.unwrap().clone()),
-        }
+        // TODO: refactor
+        Ok(Self {
+            weekday_west: Self::filter_content(weekday_west?.text().await?),
+            weekday_east: Self::filter_content(weekday_east?.text().await?),
+            weekend_west: Self::filter_content(weekend_west?.text().await?),
+            weekend_east: Self::filter_content(weekend_east?.text().await?),
+        })
     }
 }
