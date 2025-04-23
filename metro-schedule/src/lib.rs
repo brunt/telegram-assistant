@@ -255,27 +255,36 @@ impl Schedules {
         }
     }
     pub async fn new() -> Result<Self, anyhow::Error> {
-        let weekday_west_request =
-            reqwest::get(Self::generate_schedule(Direction::West, "weekdays"));
-        let weekday_east_request =
-            reqwest::get(Self::generate_schedule(Direction::East, "weekdays"));
-        let weekend_west_request =
-            reqwest::get(Self::generate_schedule(Direction::West, "weekends"));
-        let weekend_east_request =
-            reqwest::get(Self::generate_schedule(Direction::East, "weekends"));
+        let client = reqwest::Client::new();
 
         let (weekday_west, weekday_east, weekend_west, weekend_east) = tokio::join!(
-            weekday_west_request,
-            weekday_east_request,
-            weekend_west_request,
-            weekend_east_request
+            client
+                .get(Self::generate_schedule(Direction::West, "weekdays"))
+                .send()
+                .await?
+                .text(),
+            client
+                .get(Self::generate_schedule(Direction::East, "weekdays"))
+                .send()
+                .await?
+                .text(),
+            client
+                .get(Self::generate_schedule(Direction::West, "weekends"))
+                .send()
+                .await?
+                .text(),
+            client
+                .get(Self::generate_schedule(Direction::East, "weekends"))
+                .send()
+                .await?
+                .text(),
         );
-        // TODO: refactor
+
         Ok(Self {
-            weekday_west: Self::filter_content(weekday_west?.text().await?),
-            weekday_east: Self::filter_content(weekday_east?.text().await?),
-            weekend_west: Self::filter_content(weekend_west?.text().await?),
-            weekend_east: Self::filter_content(weekend_east?.text().await?),
+            weekday_west: Self::filter_content(weekday_west?),
+            weekday_east: Self::filter_content(weekday_east?),
+            weekend_west: Self::filter_content(weekend_west?),
+            weekend_east: Self::filter_content(weekend_east?),
         })
     }
 }
