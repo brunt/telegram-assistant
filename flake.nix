@@ -1,6 +1,5 @@
 {
   # type `nix develop` in a terminal to use this flake
-  # then `cargo b -r --target aarch64-unknown-linux-gnu` to compile
   description = "Cross-compiling a Rust + OpenSSL project to aarch64-unknown-linux-gnu";
 
   inputs = {
@@ -46,6 +45,10 @@
           CARGO_TARGET_DIR= "/tmp/target";
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C target-feature=+crt-static";
           RUSTFLAGS = "-C linker=${crossPkgs.stdenv.cc.targetPrefix}cc -C link-arg=-static";
+
+          shellHook = ''
+            cargo b -r --target aarch64-unknown-linux-gnu
+          '';
         };
       });
 }
