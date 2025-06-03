@@ -10,18 +10,17 @@ teloxide = { version = "0.15", features = ["macros"] }
 serde = "1"
 serde_derive = "1"
 simple_moving_average = "1.0.2"
-reqwest = {version ="0.12", features = ["json"]}
+reqwest = {version ="0.12.19", features = ["json", "rustls-tls"]}
 #prometheus = "0.13"
 tokio = { version =  "1", features = ["rt-multi-thread", "macros"] }
 #sysinfo = "0.27.0"
-spending-tracker = { package = "spending-tracker", path = "../spending-tracker" }
-metro-schedule = { package = "metro-schedule", path = "../metro-schedule" }
-notification-service = { package = "notification-service", path = "../notification-service" }
+spending-tracker = { path = "../spending-tracker" }
+metro-schedule = { path = "../metro-schedule" }
+notification-service = { path = "../notification-service" }
 winnow = "0.7"
-openssl = { version = "0.10", features = ["vendored"] } # cross compile
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6.0"
 
 [[bench]]
 name = "parser_benchmark"
